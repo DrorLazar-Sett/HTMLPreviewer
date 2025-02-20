@@ -167,6 +167,18 @@
       transition: background 0.3s, transform 0.2s;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
       position: relative;
+      min-height: 240px; /* Height for tile + name */
+    }
+    
+    .placeholder {
+      width: 200px;
+      height: 180px;
+      background: #3a3a3a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 0.9rem;
     }
     .model-tile:hover {
       background: #333;
@@ -559,14 +571,43 @@
       return `${h > 0 ? `${h}:` : ''}${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
+    // Intersection Observer setup for lazy loading
+    const observerOptions = {
+      root: null,
+      rootMargin: '50px',
+      threshold: 0.1
+    };
+
+    const tileObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const tile = entry.target;
+          loadTileContent(tile);
+          observer.unobserve(tile);
+        }
+      });
+    }, observerOptions);
+
+    function createPlaceholder(type) {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'placeholder';
+      placeholder.innerHTML = `<i class="fa fa-spinner fa-spin"></i><br>Loading ${type}...`;
+      return placeholder;
+    }
+
     function renderPage(pageIndex) {
       // Page rendering - Creates and displays asset preview tiles for the current page
       viewerContainer.innerHTML = "";
       const startIndex = pageIndex * itemsPerPage;
       const pageItems = filteredModelFiles.slice(startIndex, startIndex + itemsPerPage);
-      pageItems.forEach(async (model) => {
+      pageItems.forEach(model => {
+        // Create tile with placeholder
         const tile = document.createElement("div");
         tile.className = "model-tile";
+        tile.dataset.modelType = model.type;
+        tile.dataset.modelName = model.name;
+        
+        // Add fullscreen button if not audio
         if (model.type !== "audio") {
           const fsBtn = document.createElement('button');
           fsBtn.className = 'fullscreen-btn';
@@ -574,6 +615,30 @@
           fsBtn.onclick = () => showFullscreen(model);
           tile.appendChild(fsBtn);
         }
+
+        // Add placeholder based on type
+        tile.appendChild(createPlaceholder(model.type));
+        
+        // Store model data for lazy loading
+        tile.model = model;
+        // Add name label
+        const nameDiv = document.createElement("div");
+        nameDiv.className = model.type === "video" ? "video-name" : "model-name";
+        nameDiv.textContent = model.name;
+        tile.appendChild(nameDiv);
+        
+        viewerContainer.appendChild(tile);
+        
+        // Start observing the tile
+        tileObserver.observe(tile);
+      });
+    }
+
+    async function loadTileContent(tile) {
+      const model = tile.model;
+      const placeholder = tile.querySelector('.placeholder');
+      
+      try {
         if (model.type === "glb") {
           const mv = document.createElement("model-viewer");
           mv.src = URL.createObjectURL(model.file);
@@ -581,13 +646,15 @@
           mv.setAttribute("auto-rotate", "");
           mv.setAttribute("environment-image", "neutral");
           mv.setAttribute("animation-name", "*");
-          tile.appendChild(mv);
+          placeholder.replaceWith(mv);
+          
         } else if (model.type === "fbx") {
           const viewerDiv = document.createElement("div");
           viewerDiv.className = "three-viewer";
-          tile.appendChild(viewerDiv);
+          placeholder.replaceWith(viewerDiv);
           const viewer = new FBXViewer(viewerDiv);
           viewer.loadModel(URL.createObjectURL(model.file));
+          
         } else if (model.type === "video") {
           const videoPreview = document.createElement("div");
           videoPreview.className = "video-preview";
@@ -595,6 +662,7 @@
           video.src = URL.createObjectURL(model.file);
           video.muted = true;
           videoPreview.appendChild(video);
+          
           const scrubBarContainer = document.createElement("div");
           scrubBarContainer.className = "scrub-bar-container";
           const scrubBar = document.createElement("div");
@@ -604,6 +672,7 @@
           timeMarker.className = "time-marker";
           scrubBar.appendChild(timeMarker);
           videoPreview.appendChild(scrubBarContainer);
+          
           videoPreview.addEventListener('mousemove', (e) => {
             if (!video.duration) return;
             const rect = videoPreview.getBoundingClientRect();
@@ -615,7 +684,9 @@
             timeMarker.textContent = formatTime(newTime);
             timeMarker.style.left = `${percentage * 100}%`;
           });
-          tile.appendChild(videoPreview);
+          
+          placeholder.replaceWith(videoPreview);
+          
         } else if (model.type === "audio") {
           const audioTile = document.createElement("div");
           audioTile.className = "audio-tile";
@@ -631,21 +702,20 @@
           audioControls.appendChild(audioElem);
           audioTile.appendChild(audioHeader);
           audioTile.appendChild(audioControls);
-          tile.appendChild(audioTile);
+          placeholder.replaceWith(audioTile);
+          
         } else if (model.type === "image") {
           const imagePreview = document.createElement("div");
           imagePreview.className = "image-preview";
           const imgElem = document.createElement("img");
           imgElem.src = URL.createObjectURL(model.file);
           imagePreview.appendChild(imgElem);
-          tile.appendChild(imagePreview);
+          placeholder.replaceWith(imagePreview);
         }
-        const nameDiv = document.createElement("div");
-        nameDiv.className = model.type === "video" ? "video-name" : "model-name";
-        nameDiv.textContent = model.name;
-        tile.appendChild(nameDiv);
-        viewerContainer.appendChild(tile);
-      });
+      } catch (error) {
+        console.error(`Error loading ${model.type} content:`, error);
+        placeholder.innerHTML = `<i class="fa fa-exclamation-triangle"></i><br>Error loading ${model.type}`;
+      }
     }
 
     async function showFullscreen(model) {
