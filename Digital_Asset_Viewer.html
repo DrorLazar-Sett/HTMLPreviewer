@@ -156,6 +156,7 @@
       gap: 16px;
       padding: 20px;
       margin-top: 60px; /* leave room for fixed header */
+      height: 250px;
     }
 
     .model-tile {
@@ -167,12 +168,13 @@
       transition: background 0.3s, transform 0.2s;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
       position: relative;
-      min-height: 240px; /* Height for tile + name */
+      min-height: 220px; /* Height for tile + name */
+      
     }
     
     .placeholder {
       width: 200px;
-      height: 180px;
+      height: 160px;
       background: #3a3a3a;
       display: flex;
       align-items: center;
@@ -246,7 +248,7 @@
     .audio-tile {
       display: flex;
       flex-direction: column;
-      height: 180px;
+      height: 160px;
       background-color: #2a2a2a;
       border: 1px solid #444;
       border-radius: 6px;
@@ -278,13 +280,13 @@
     }
     /* Make native dark-mode audio controls appear white */
     body.dark-mode .audio-controls audio::-webkit-media-controls-panel {
-      background-color: #2a2a2a !important;
+      background-color: #9c9c9c !important;
       filter: invert(1) hue-rotate(180deg);
     }
     /* Image preview tiles - Styling for image thumbnails and full-size views */
     .image-preview img {
       width: 100%;
-      height: 180px;
+      height: 160px;
       object-fit: cover;
       border-radius: 4px;
     }
@@ -345,6 +347,40 @@
       cursor: pointer;
       z-index: 1001;
     }
+    /* Drag and drop styles */
+    #viewerContainer {
+      min-height: calc(100vh - 80px); /* Full viewport height minus header */
+      position: relative;
+    }
+    
+    #viewerContainer.drag-over::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      border: 3px dashed #888;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    #viewerContainer.drag-over::after {
+      content: 'Drop files here';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      color: #888;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 20px 40px;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 11;
+    }
+
     /* Light theme styles - Color scheme overrides for light mode */
     body:not(.dark-mode) {
       background-color: #f0f0f0;
@@ -977,7 +1013,7 @@
         
         // If no handle or navigation failed, show directory picker
         const dirHandle = await window.showDirectoryPicker({
-          startIn: lastDirectoryHandle || 'desktop'
+          startIn: lastDirectoryHandle || 'downloads'
         });
         
         // Store for future use
@@ -1115,6 +1151,88 @@
         currentFullscreenViewer = null;
       }
     }
+
+    // Setup drag and drop handlers
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      viewerContainer.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.target === viewerContainer) {
+        viewerContainer.classList.remove('drag-over');
+      }
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      viewerContainer.classList.remove('drag-over');
+      
+      console.log("Drop event triggered");
+      
+      try {
+        const droppedFiles = e.dataTransfer.files;
+        console.log("Number of dropped files:", droppedFiles.length);
+        
+        // Clear existing files
+        modelFiles = [];
+        viewerContainer.innerHTML = "";
+        
+        // Process each dropped file
+        for (const file of droppedFiles) {
+          console.log("Processing file:", file.name, "size:", file.size, "type:", file.type);
+          
+          const lowerCaseName = file.name.toLowerCase();
+          let type = null;
+          
+          // Determine file type
+          if (lowerCaseName.endsWith(".glb")) type = "glb";
+          else if (lowerCaseName.endsWith(".fbx")) type = "fbx";
+          else if (lowerCaseName.endsWith(".mp4") || lowerCaseName.endsWith(".webm") || lowerCaseName.endsWith(".ogg")) type = "video";
+          else if (lowerCaseName.endsWith(".mp3") || lowerCaseName.endsWith(".wav")) type = "audio";
+          else if (lowerCaseName.endsWith(".jpg") || lowerCaseName.endsWith(".jpeg") || lowerCaseName.endsWith(".png") || lowerCaseName.endsWith(".gif")) type = "image";
+          
+          if (type) {
+            console.log("Adding file:", file.name, "as type:", type);
+            modelFiles.push({ name: file.name, file, type });
+          }
+        }
+        
+        console.log("Total files added:", modelFiles.length);
+        
+        if (modelFiles.length > 0) {
+          // Sort and display files
+          modelFiles.sort((a, b) => a.name.localeCompare(b.name));
+          updateFilteredModelFiles();
+          currentPage = 0;
+          updatePagination();
+          renderPage(currentPage);
+          console.log("View updated with new files");
+        } else {
+          console.log("No supported files found in drop");
+          alert("No supported files found. Please drop GLB, FBX, video, audio, or image files.");
+        }
+        
+      } catch (error) {
+        console.error("Error processing dropped files:", error);
+        alert(`Error processing files: ${error.message}`);
+      }
+    }
+
+    // Add drag and drop event listeners
+    viewerContainer.addEventListener('dragenter', handleDragOver);
+    viewerContainer.addEventListener('dragover', handleDragOver);
+    viewerContainer.addEventListener('dragleave', handleDragLeave);
+    viewerContainer.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      viewerContainer.classList.remove('drag-over');
+      await handleDrop(e);
+    });
 
     // Filter event setup - Initializes file type filter checkboxes and their change handlers
     const filterCheckboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]');
