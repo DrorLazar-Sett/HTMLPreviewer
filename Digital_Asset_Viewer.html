@@ -181,16 +181,96 @@
       align-items: center;
       padding: 8px 16px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: all 0.3s;
       color: #fff;
+      position: relative;
     }
     
     .dropdown-content label:hover {
       background-color: #444;
     }
-    
-    .dropdown-content input[type="checkbox"] {
-      margin-right: 8px;
+
+    /* Type filter styles */
+    .dropdown-content label input[type="checkbox"] {
+      display: none;
+    }
+
+    .dropdown-content label span {
+      position: relative;
+      padding-left: 28px;
+    }
+
+    .dropdown-content label span:before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      border: 2px solid #666;
+      border-radius: 4px;
+      transition: all 0.3s;
+    }
+
+    .dropdown-content label:hover span:before {
+      border-color: #888;
+    }
+
+    .dropdown-content label input[type="checkbox"]:checked + span:before {
+      background-color: #4CAF50;
+      border-color: #4CAF50;
+    }
+
+    .dropdown-content label input[type="checkbox"]:checked + span:after {
+      content: '\f00c';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      position: absolute;
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: white;
+      font-size: 12px;
+    }
+
+    /* Sort options styles */
+    .dropdown-content .sort-option {
+      padding-left: 36px;
+    }
+
+    .dropdown-content .sort-option i {
+      position: absolute;
+      left: 12px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .dropdown-content .sort-option.active i {
+      opacity: 1;
+      color: #4CAF50;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background-color: #555;
+      margin: 8px 0;
+    }
+
+    .dropdown-content .sort-direction {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+
+    .dropdown-content .sort-direction i {
+      transition: transform 0.3s;
+    }
+
+    .dropdown-content .sort-direction.desc i {
+      transform: rotate(180deg);
     }
     
     /* Light theme styles for dropdown */
@@ -558,16 +638,19 @@
       </select>
     </div>
     <div class="controls-group">
-      <div class="sort-controls">
-        <select class="sort-select" id="sortField">
-          <option value="name">Sort by Name</option>
-          <option value="size">Sort by Size</option>
-          <option value="type">Sort by Type</option>
-          <option value="date">Sort by Date</option>
-        </select>
-        <button class="sort-direction-btn" id="sortDirection" title="Toggle sort direction">
-          <i class="fa fa-sort-up"></i>
-        </button>
+      <div class="dropdown">
+        <button class="btn dropdown-btn">Sort <i class="fa fa-chevron-down"></i></button>
+        <div class="dropdown-content">
+          <label data-value="name" class="sort-option active"><i class="fa fa-check"></i>Sort by Name</label>
+          <label data-value="size" class="sort-option"><i class="fa fa-check"></i>Sort by Size</label>
+          <label data-value="type" class="sort-option"><i class="fa fa-check"></i>Sort by Type</label>
+          <label data-value="date" class="sort-option"><i class="fa fa-check"></i>Sort by Date</label>
+          <div class="dropdown-divider"></div>
+          <label class="sort-direction">
+            <i class="fa fa-sort-up"></i>
+            <span>Ascending</span>
+          </label>
+        </div>
       </div>
       <div class="dropdown">
         <button class="btn dropdown-btn">Type <i class="fa fa-chevron-down"></i></button>
@@ -662,21 +745,29 @@
     }
 
     // Initialize sort controls
-    const sortField = document.getElementById('sortField');
-    const sortDirection = document.getElementById('sortDirection');
+    const sortOptions = document.querySelectorAll('.sort-option');
+    const sortDirectionBtn = document.querySelector('.sort-direction');
     
-    sortField.addEventListener('change', () => {
-      currentSort.field = sortField.value;
-      sortFiles();
-      currentPage = 0;
-      updatePagination();
-      renderPage(currentPage);
+    sortOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        // Remove active class from all options
+        sortOptions.forEach(opt => opt.classList.remove('active'));
+        // Add active class to clicked option
+        option.classList.add('active');
+        // Update sort field
+        currentSort.field = option.dataset.value;
+        sortFiles();
+        currentPage = 0;
+        updatePagination();
+        renderPage(currentPage);
+      });
     });
 
-    sortDirection.addEventListener('click', () => {
+    sortDirectionBtn.addEventListener('click', () => {
       currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-      sortDirection.querySelector('i').className = 
-        `fa fa-sort-${currentSort.direction === 'asc' ? 'up' : 'down'}`;
+      sortDirectionBtn.classList.toggle('desc', currentSort.direction === 'desc');
+      sortDirectionBtn.querySelector('span').textContent = 
+        currentSort.direction === 'asc' ? 'Ascending' : 'Descending';
       sortFiles();
       currentPage = 0;
       updatePagination();
