@@ -191,6 +191,44 @@
       white-space: nowrap;
       overflow: hidden;
     }
+    .file-info {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 4px;
+      text-align: left;
+    }
+    .sort-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sort-select {
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .sort-direction-btn {
+      background: #333;
+      border: 1px solid #555;
+      color: white;
+      border-radius: 4px;
+      padding: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+    }
+    body:not(.dark-mode) .sort-select,
+    body:not(.dark-mode) .sort-direction-btn {
+      background: #fff;
+      color: #333;
+      border-color: #ccc;
+    }
     /* All preview tiles fixed to 200x180px */
     model-viewer, .three-viewer, .video-preview {
       width: 200px;
@@ -369,6 +407,17 @@
       </select>
     </div>
     <div class="controls-group">
+      <div class="sort-controls">
+        <select class="sort-select" id="sortField">
+          <option value="name">Sort by Name</option>
+          <option value="size">Sort by Size</option>
+          <option value="type">Sort by Type</option>
+          <option value="date">Sort by Date</option>
+        </select>
+        <button class="sort-direction-btn" id="sortDirection" title="Toggle sort direction">
+          <i class="fa fa-sort-up"></i>
+        </button>
+      </div>
       <div class="checkbox-group">
         <label><input type="checkbox" id="filter-fbx" checked><span>FBX</span></label>
         <label><input type="checkbox" id="filter-glb" checked><span>GLB</span></label>
@@ -420,6 +469,65 @@
     let currentFullscreenViewer = null;
     let filteredModelFiles = [];
     let loadSubfolders = false;  // flag for subfolder loading
+    let currentSort = { field: 'name', direction: 'asc' };
+
+    // Format file size in a human-readable format
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Format date in a readable format
+    function formatDate(date) {
+      return new Date(date).toLocaleString();
+    }
+
+    // Sort files based on current sort settings
+    function sortFiles() {
+      filteredModelFiles.sort((a, b) => {
+        let comparison = 0;
+        switch (currentSort.field) {
+          case 'name':
+            comparison = a.name.localeCompare(b.name);
+            break;
+          case 'size':
+            comparison = a.file.size - b.file.size;
+            break;
+          case 'type':
+            comparison = a.type.localeCompare(b.type);
+            break;
+          case 'date':
+            comparison = a.file.lastModified - b.file.lastModified;
+            break;
+        }
+        return currentSort.direction === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    // Initialize sort controls
+    const sortField = document.getElementById('sortField');
+    const sortDirection = document.getElementById('sortDirection');
+    
+    sortField.addEventListener('change', () => {
+      currentSort.field = sortField.value;
+      sortFiles();
+      currentPage = 0;
+      updatePagination();
+      renderPage(currentPage);
+    });
+
+    sortDirection.addEventListener('click', () => {
+      currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      sortDirection.querySelector('i').className = 
+        `fa fa-sort-${currentSort.direction === 'asc' ? 'up' : 'down'}`;
+      sortFiles();
+      currentPage = 0;
+      updatePagination();
+      renderPage(currentPage);
+    });
 
     // Toggle subfolder loading
     subfolderToggle.addEventListener("click", () => {
@@ -626,6 +734,15 @@
         nameDiv.className = model.type === "video" ? "video-name" : "model-name";
         nameDiv.textContent = model.name;
         tile.appendChild(nameDiv);
+
+        // Add file info (size and date)
+        const fileInfo = document.createElement("div");
+        fileInfo.className = "file-info";
+        fileInfo.innerHTML = `
+          ${formatFileSize(model.file.size)} • 
+          ${formatDate(model.file.lastModified)}
+        `;
+        tile.appendChild(fileInfo);
         
         viewerContainer.appendChild(tile);
         
