@@ -139,6 +139,80 @@
       color: #fff;
     }
 
+    /* Dropdown menu styles */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dropdown-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background-color: #333;
+      min-width: 160px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px 0;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .dropdown:hover .dropdown-content {
+      display: block;
+    }
+    
+    .dropdown-content label {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      color: #fff;
+    }
+    
+    .dropdown-content label:hover {
+      background-color: #444;
+    }
+    
+    .dropdown-content input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    
+    /* Light theme styles for dropdown */
+    body:not(.dark-mode) .dropdown-btn {
+      background-color: #fff;
+      color: #333;
+      border-color: #ccc;
+    }
+    
+    body:not(.dark-mode) .dropdown-content {
+      background-color: #fff;
+      border-color: #ccc;
+    }
+    
+    body:not(.dark-mode) .dropdown-content label {
+      color: #333;
+    }
+    
+    body:not(.dark-mode) .dropdown-content label:hover {
+      background-color: #f0f0f0;
+    }
+
     /* Dropdown menu - Styling for items per page selector */
     select {
       background: #333;
@@ -495,12 +569,15 @@
           <i class="fa fa-sort-up"></i>
         </button>
       </div>
-      <div class="checkbox-group">
-        <label><input type="checkbox" id="filter-fbx" checked><span>FBX</span></label>
-        <label><input type="checkbox" id="filter-glb" checked><span>GLB</span></label>
-        <label><input type="checkbox" id="filter-video" checked><span>Video</span></label>
-        <label><input type="checkbox" id="filter-audio" checked><span>Audio</span></label>
-        <label><input type="checkbox" id="filter-image" checked><span>Images</span></label>
+      <div class="dropdown">
+        <button class="btn dropdown-btn">Type <i class="fa fa-chevron-down"></i></button>
+        <div class="dropdown-content">
+          <label><input type="checkbox" id="filter-fbx" checked><span>FBX</span></label>
+          <label><input type="checkbox" id="filter-glb" checked><span>GLB</span></label>
+          <label><input type="checkbox" id="filter-video" checked><span>Video</span></label>
+          <label><input type="checkbox" id="filter-audio" checked><span>Audio</span></label>
+          <label><input type="checkbox" id="filter-image" checked><span>Images</span></label>
+        </div>
       </div>
       <button id="darkModeToggle" class="btn" title="Toggle dark mode">
         <i class="fa fa-moon"></i>
@@ -1302,10 +1379,11 @@
     });
 
     // Filter event setup - Initializes file type filter checkboxes and their change handlers
-    const filterCheckboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]');
+    const filterCheckboxes = document.querySelectorAll('.dropdown-content input[type="checkbox"]');
     filterCheckboxes.forEach(checkbox => {
       checkbox.addEventListener('change', () => {
-        updateFilteredModelFiles();        currentPage = 0;
+        updateFilteredModelFiles();
+        currentPage = 0;
         updatePagination();
         renderPage(currentPage);
       });
