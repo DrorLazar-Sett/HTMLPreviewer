@@ -755,20 +755,25 @@
         if (!window.isSecureContext) throw new Error('Secure context required');
         if (window !== window.parent) throw new Error('Cannot be used in iframes');
         
-        // Check if there's a path in the input field
+        const dirHandle = await window.showDirectoryPicker();
+        // If there's a path in the input field, verify if the selected directory matches
         const manualPath = folderPathInput.value.trim();
         if (manualPath) {
           try {
-            const dirHandle = await window.showDirectoryPicker({
-              startIn: manualPath
-            });
-            handleFolderPick(dirHandle);
+            // Get the directory path from the handle
+            const relativePaths = manualPath.split('\\');
+            let currentHandle = dirHandle;
+            for (const path of relativePaths) {
+              if (path === '') continue;
+              currentHandle = await currentHandle.getDirectoryHandle(path);
+            }
+            handleFolderPick(currentHandle);
           } catch (error) {
             console.error("Error accessing specified path:", error);
-            alert(`Error: Could not access the specified path. Please check if the path is correct and you have permission to access it.`);
+            // If path navigation fails, fall back to using the selected directory
+            handleFolderPick(dirHandle);
           }
         } else {
-          const dirHandle = await window.showDirectoryPicker();
           handleFolderPick(dirHandle);
         }
       } catch (error) {
