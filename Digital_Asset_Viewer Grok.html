@@ -2,7 +2,7 @@
 <html lang="en" class="dark-mode">
 <head>
   <meta charset="UTF-8" />
-  <title>3D Models, Video, Audio &amp; Image Grid Preview</title>
+  <title>3D Models, Video, Audio & Image Grid Preview</title>
 
   <!-- Import map MUST be first - Defines module imports for Three.js and its addons -->
   <script type="importmap">
@@ -545,6 +545,7 @@
         updatePagination();
         renderPage(currentPage);
         console.log("Initial page rendered");
+        console.log("Folder processing completed successfully");
       } catch (error) {
         console.error("Error in handleFolderPick:", error);
         alert(`Error: ${error.message}\n\nFailed to access folder contents. Ensure you have permission.`);
@@ -564,6 +565,7 @@
       viewerContainer.innerHTML = "";
       const startIndex = pageIndex * itemsPerPage;
       const pageItems = filteredModelFiles.slice(startIndex, startIndex + itemsPerPage);
+      console.log(`Rendering page ${pageIndex + 1} with ${pageItems.length} items`);
       pageItems.forEach(async (model) => {
         const tile = document.createElement("div");
         tile.className = "model-tile";
@@ -759,102 +761,35 @@
       nextPageBtn.disabled = currentPage >= totalPages - 1;
     }
 
-    // Store the last used directory handle
-    let lastDirectoryHandle = null;
-
     // Function to handle loading folder from path
     async function loadFolderFromPath(path) {
       console.log("Attempting to load folder from path:", path);
       try {
-        // Try to use the last directory handle if available
-        if (lastDirectoryHandle && path) {
-          try {
-            // Try to navigate to the specified path
-            const parts = path.split('\\').filter(p => p);
-            let currentHandle = lastDirectoryHandle;
-            
-            for (const part of parts) {
-              currentHandle = await currentHandle.getDirectoryHandle(part);
+        const result = await window.electron.invoke('read-directory', path);
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        console.log(`Successfully read directory at ${path}: ${result.files.length} files found`);
+        const dirHandle = {
+          entries: async function* () {
+            for (const file of result.files) {
+              if (file.type === 'file') {
+                yield [file.name, {
+                  kind: 'file',
+                  getFile: async () => {
+                    const content = await window.electron.invoke('read-file', file.path);
+                    return new File([content], file.name);
+                  }
+                }];
+              }
             }
-            
-            // Update input field with path
-            folderPathInput.value = path;
-            
-            // Process the directory
-            await handleFolderPick(currentHandle);
-            return;
-          } catch (error) {
-            console.log("Failed to navigate from last handle:", error);
           }
-        }
-        
-        // If no handle or navigation failed, show directory picker
-        const dirHandle = await window.showDirectoryPicker({
-          startIn: lastDirectoryHandle || 'desktop'
-        });
-        
-        // Store for future use
-        lastDirectoryHandle = dirHandle;
-        
-        // Get the full path
-        let fullPath = dirHandle.name;
-        try {
-          const relativeParts = [];
-          let current = dirHandle;
-          while (current) {
-            relativeParts.unshift(current.name);
-            current = await current.getParent();
-          }
-          fullPath = relativeParts.join('\\');
-        } catch (error) {
-          console.log("Could not get full path:", error);
-        }
-        
-        // Update input field with path
-        folderPathInput.value = fullPath;
-        
-        // Process the directory
+        };
+        console.log(`Processing folder from path: ${path}`);
         await handleFolderPick(dirHandle);
+        console.log(`Folder at ${path} loaded successfully`);
       } catch (error) {
         console.error("Error loading folder from path:", error);
-        alert(`Error: ${error.message}`);
-      }
-    }
-
-    // Handle folder selection
-    async function handleFolderSelection() {
-      console.log("Selecting folder");
-      try {
-        // Show directory picker
-        const dirHandle = await window.showDirectoryPicker({
-          startIn: lastDirectoryHandle || 'desktop'
-        });
-        
-        // Store for future use
-        lastDirectoryHandle = dirHandle;
-        
-        // Get the full path
-        let fullPath = dirHandle.name;
-        try {
-          const relativeParts = [];
-          let current = dirHandle;
-          while (current) {
-            relativeParts.unshift(current.name);
-            current = await current.getParent();
-          }
-          fullPath = relativeParts.join('\\');
-          console.log("Full path:", fullPath);
-        } catch (error) {
-          console.log("Could not get full path:", error);
-        }
-        
-        // Update input field with path
-        folderPathInput.value = fullPath;
-        
-        // Process the directory
-        await handleFolderPick(dirHandle);
-      } catch (error) {
-        console.error("Error selecting folder:", error);
         alert(`Error: ${error.message}`);
       }
     }
@@ -863,7 +798,13 @@
     folderPathInput.addEventListener("keypress", async (event) => {
       if (event.key === "Enter") {
         console.log("Enter key pressed in folder input");
-        await handleFolderSelection();
+        const path = folderPathInput.value.trim();
+        if (path) {
+          console.log(`Enter key triggered: Loading folder from path: ${path}`);
+          await loadFolderFromPath(path);
+        } else {
+          console.log("Enter key pressed but no path entered; no action taken");
+        }
       }
     });
 
@@ -871,10 +812,18 @@
       // Folder selection handler
       console.log("Folder picker button clicked");
       try {
-        await handleFolderSelection();
+        const path = folderPathInput.value.trim();
+        if (path) {
+          console.log(`Button triggered: Loading folder from input path: ${path}`);
+          await loadFolderFromPath(path);
+        } else {
+          console.log("Button triggered: No path entered, opening directory picker");
+          const dirHandle = await window.showDirectoryPicker();
+          await handleFolderPick(dirHandle);
+        }
       } catch (error) {
         console.error("Error in folderPicker click:", error);
-        alert(`Error: ${error.message}`);
+        alert(`Error: ${error.message}\n\nPlease use HTTPS/localhost and allow file access`);
       }
     });
 
