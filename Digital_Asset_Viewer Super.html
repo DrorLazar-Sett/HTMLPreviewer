@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+  <meta charset="UTF-8" />
+  <title>Enhanced Digital Asset Viewer</title>
+
+  <!-- Import map MUST be first - Defines module imports for Three.js and its addons -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <!-- Three.js modules - Import and expose Three.js components globally for FBX viewer -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+    window.THREE = THREE;
+    window.FBXLoader = FBXLoader;
+    window.OrbitControls = OrbitControls;
+  </script>
+
+  <!-- Model Viewer component - Google's web component for 3D model visualization -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+  <!-- Font Awesome - Icon library for UI elements -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <!-- JSZip and FileSaver for download functionality -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <!-- Styles for the application UI and components -->
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      margin: 0;
+      transition: background-color 0.4s, color 0.4s;
+    }
+    /* Sticky top bar - Contains header, folder controls, filter/sort options, and download button */
+    #topBar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: inherit;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      border-bottom: 1px solid #444;
+      gap: 20px;
+    }
+    #topBar h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      white-space: nowrap;
+    }
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      justify-content: flex-end;
+    }
+    .fileControls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+    /* Input field styles */
+    .folder-input {
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px;
+      margin-right: 10px;
+      width: 300px;
+      font-size: 1rem;
+    }
+    body:not(.dark-mode) .folder-input {
+      background-color: #fff;
+      color: #333;
+      border-color: #ccc;
+    }
+    /* Common button styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .btn:hover {
+      background-color: #444;
+    }
+    /* Pagination controls */
+    .prevPage, .nextPage {
+      padding: 6px 10px;
+    }
+    /* Filter toggles */
+    .checkbox-group {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .checkbox-group label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background-color: #333;
+      color: #fff;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .checkbox-group label input {
+      display: none;
+    }
+    .checkbox-group label:has(input:checked) {
+      background-color: #555;
+      color: #fff;
+    }
+    /* Dropdown menus */
+    select {
+      background: #333;
+      color: white;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px;
+      cursor: pointer;
+    }
+    /* New sort options style */
+    #sortContainer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    /* Main content grid */
+    #viewerContainer {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      padding: 20px;
+      margin-top: 60px; /* leave room for fixed header */
+      min-height: 300px;
+    }
+    .model-tile {
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: #2a2a2a;
+      text-align: center;
+      padding: 12px;
+      transition: background 0.3s, transform 0.2s, opacity 0.5s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      position: relative;
+      opacity: 0; /* will fade in when loaded */
+    }
+    .model-tile.loaded {
+      opacity: 1;
+    }
+    .model-tile:hover {
+      background: #333;
+      transform: translateY(-2px);
+    }
+    /* Preview sizes */
+    model-viewer, .three-viewer, .video-preview {
+      width: 200px;
+      height: 180px;
+      background-color: #3a3a3a;
+      --poster-color: transparent;
+      position: relative;
+    }
+    .video-preview video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .audio-tile {
+      display: flex;
+      flex-direction: column;
+      height: 180px;
+      background-color: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .audio-header {
+      background-color: #333;
+      color: #fff;
+      padding: 8px;
+      text-align: center;
+      font-size: 1.2rem;
+      border-bottom: 1px solid #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .audio-controls {
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #2a2a2a;
+      padding: 4px;
+    }
+    .audio-controls audio {
+      width: 90%;
+      background: transparent;
+    }
+    body.dark-mode .audio-controls audio::-webkit-media-controls-panel {
+      background-color: #2a2a2a !important;
+      filter: invert(1) hue-rotate(180deg);
+    }
+    .image-preview img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    /* Fullscreen view styles */
+    .fullscreen-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.6);
+      border: none;
+      color: white;
+      padding: 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 10;
+    }
+    #fullscreenOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    #fullscreenContent {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #fullscreenVideo {
+      display: block;
+      width: 50%;
+      height: auto;
+      max-width: 50%;
+      max-height: 100%;
+      object-fit: contain;
+      margin: auto;
+    }
+    #fullscreenViewer {
+      width: 100%;
+      height: 100%;
+    }
+    #returnButton {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0,0,0,0.6);
+      border: none;
+      color: white;
+      padding: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 1001;
+    }
+    /* Light theme styles */
+    body:not(.dark-mode) {
+      background-color: #f0f0f0;
+      color: #000;
+    }
+    body:not(.dark-mode) .btn {
+      background-color: #fff;
+      color: #333;
+      border-color: #ccc;
+    }
+    body:not(.dark-mode) .model-tile {
+      background: #fff;
+      border-color: #ccc;
+    }
+    body:not(.dark-mode) model-viewer,
+    body:not(.dark-mode) .three-viewer,
+    body:not(.dark-mode) .video-preview {
+      background-color: #cfcfcf;
+    }
+    body:not(.dark-mode) .audio-tile {
+      background-color: #fff;
+      border: 1px solid #ccc;
+    }
+    body:not(.dark-mode) .audio-header {
+      background-color: #ddd;
+      color: #000;
+      border-bottom: 1px solid #ccc;
+    }
+    body:not(.dark-mode) .audio-controls {
+      background-color: #fff;
+    }
+    body:not(.dark-mode) .audio-controls audio::-webkit-media-controls-panel {
+      background-color: #e0e0e0 !important;
+      filter: none;
+    }
+    /* Drag & Drop Visual Feedback */
+    #viewerContainer.drag-over {
+      border: 2px dashed #fff;
+    }
+    /* Checkbox for tile selection */
+    .tile-select-checkbox {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 11;
+    }
+  </style>
+</head>
+<body class="dark-mode">
+  <!-- Top bar with header, file controls, filter/sort options, and download button -->
+  <div id="topBar">
+    <h1>Enhanced Digital Asset Viewer</h1>
+    <div class="fileControls">
+      <input type="text" id="folderPath" class="folder-input" placeholder="Enter folder path">
+      <button id="folderPicker" class="btn" title="Pick a folder">
+        <i class="fa fa-folder-open"></i>
+      </button>
+      <button id="subfolderToggle" class="btn" title="Toggle load subfolders">Subfolders: Off</button>
+      <button id="prevPage" class="btn prevPage" disabled>
+        <i class="fa fa-chevron-left"></i>
+      </button>
+      <span id="pageInfo" class="pageInfo">Page 0 of 0</span>
+      <button id="nextPage" class="btn nextPage" disabled>
+        <i class="fa fa-chevron-right"></i>
+      </button>
+      <select id="itemsPerPage">
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="150">150</option>
+      </select>
+      <!-- New Sort Options -->
+      <div id="sortContainer">
+        <label for="sortOptions">Sort By:</label>
+        <select id="sortOptions">
+          <option value="name" selected>Name</option>
+          <option value="size">Size</option>
+          <option value="date">Date</option>
+          <option value="type">Type</option>
+        </select>
+      </div>
+      <!-- Download button with count -->
+      <button id="downloadBtn" class="btn" title="Download selected files">Download (0)</button>
+    </div>
+    <div class="controls-group">
+      <div class="checkbox-group" id="filterGroup">
+        <label><input type="checkbox" id="filter-fbx" checked><span>FBX</span></label>
+        <label><input type="checkbox" id="filter-glb" checked><span>GLB</span></label>
+        <label><input type="checkbox" id="filter-video" checked><span>Video</span></label>
+        <label><input type="checkbox" id="filter-audio" checked><span>Audio</span></label>
+        <label><input type="checkbox" id="filter-image" checked><span>Images</span></label>
+      </div>
+      <button id="darkModeToggle" class="btn" title="Toggle dark mode">
+        <i class="fa fa-moon"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="viewerContainer"></div>
+
+  <!-- Fullscreen overlay -->
+  <div id="fullscreenOverlay">
+    <button id="returnButton" title="Return to grid">
+      <i class="fa fa-arrow-left"></i>
+    </button>
+    <div id="fullscreenContent">
+      <div id="fullscreenViewer"></div>
+      <video id="fullscreenVideo" controls style="display:none;"></video>
+    </div>
+  </div>
+
+  <script>
+    // Global variables
+    const folderPickerButton = document.getElementById("folderPicker");
+    const folderPathInput = document.getElementById("folderPath");
+    const darkModeToggle = document.getElementById("darkModeToggle");
+    const subfolderToggle = document.getElementById("subfolderToggle");
+    const viewerContainer = document.getElementById("viewerContainer");
+    const itemsPerPageSelect = document.getElementById("itemsPerPage");
+    const sortOptions = document.getElementById("sortOptions");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const fullscreenOverlay = document.getElementById('fullscreenOverlay');
+    const returnButton = document.getElementById('returnButton');
+    const fullscreenViewer = document.getElementById('fullscreenViewer');
+    const fullscreenVideo = document.getElementById('fullscreenVideo');
+    const filterFBX = document.getElementById('filter-fbx');
+    const filterGLB = document.getElementById('filter-glb');
+    const filterVideo = document.getElementById('filter-video');
+    const filterAudio = document.getElementById('filter-audio');
+    const filterImage = document.getElementById('filter-image');
+    const prevPageBtn = document.getElementById("prevPage");
+    const nextPageBtn = document.getElementById("nextPage");
+    const pageInfo = document.getElementById("pageInfo");
+
+    let modelFiles = [];  // Each object: { name, file, type, selected }
+    let currentPage = 0;
+    let itemsPerPage = parseInt(itemsPerPageSelect.value);
+    let currentFullscreenViewer = null;
+    let filteredModelFiles = [];
+    let loadSubfolders = false;  // flag for subfolder loading
+
+    // --- Lazy Loading Setup ---
+    const lazyObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.loaded) {
+          const model = entry.target.modelData;
+          loadTileContent(entry.target, model);
+          entry.target.dataset.loaded = "true";
+          entry.target.classList.add('loaded');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: "200px" });
+
+    // Render current page with lazy loading tiles
+    function renderPage(pageIndex) {
+      viewerContainer.innerHTML = "";
+      const startIndex = pageIndex * itemsPerPage;
+      const pageItems = filteredModelFiles.slice(startIndex, startIndex + itemsPerPage);
+      pageItems.forEach(model => {
+        const tile = document.createElement("div");
+        tile.className = "model-tile";
+        tile.modelData = model;
+        viewerContainer.appendChild(tile);
+        lazyObserver.observe(tile);
+      });
+    }
+
+    // Function to load tile content when visible
+    function loadTileContent(tile, model) {
+      // Add selection checkbox
+      const selectCheckbox = document.createElement("input");
+      selectCheckbox.type = "checkbox";
+      selectCheckbox.className = "tile-select-checkbox";
+      selectCheckbox.checked = model.selected || false;
+      selectCheckbox.addEventListener("change", () => {
+        model.selected = selectCheckbox.checked;
+        updateDownloadButtonCount();
+      });
+      tile.appendChild(selectCheckbox);
+      // Add fullscreen button (if not audio)
+      if (model.type !== "audio") {
+        const fsBtn = document.createElement('button');
+        fsBtn.className = 'fullscreen-btn';
+        fsBtn.innerHTML = '<i class="fa fa-expand"></i>';
+        fsBtn.onclick = () => showFullscreen(model);
+        tile.appendChild(fsBtn);
+      }
+      // Render content based on file type
+      if (model.type === "glb") {
+        const mv = document.createElement("model-viewer");
+        mv.src = URL.createObjectURL(model.file);
+        mv.setAttribute("camera-controls", "");
+        mv.setAttribute("auto-rotate", "");
+        mv.setAttribute("environment-image", "neutral");
+        mv.setAttribute("animation-name", "*");
+        mv.loading = "lazy";
+        tile.appendChild(mv);
+      } else if (model.type === "fbx") {
+        const viewerDiv = document.createElement("div");
+        viewerDiv.className = "three-viewer";
+        tile.appendChild(viewerDiv);
+        const viewer = new FBXViewer(viewerDiv);
+        viewer.loadModel(URL.createObjectURL(model.file));
+      } else if (model.type === "video") {
+        const videoPreview = document.createElement("div");
+        videoPreview.className = "video-preview";
+        const video = document.createElement("video");
+        video.src = URL.createObjectURL(model.file);
+        video.muted = true;
+        videoPreview.appendChild(video);
+        const scrubBarContainer = document.createElement("div");
+        scrubBarContainer.className = "scrub-bar-container";
+        const scrubBar = document.createElement("div");
+        scrubBar.className = "scrub-bar";
+        scrubBarContainer.appendChild(scrubBar);
+        const timeMarker = document.createElement("div");
+        timeMarker.className = "time-marker";
+        scrubBar.appendChild(timeMarker);
+        videoPreview.appendChild(scrubBarContainer);
+        videoPreview.addEventListener('mousemove', (e) => {
+          if (!video.duration) return;
+          const rect = videoPreview.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const percentage = x / rect.width;
+          video.currentTime = percentage * video.duration;
+          scrubBar.style.width = `${percentage * 100}%`;
+          timeMarker.textContent = formatTime(video.currentTime);
+          timeMarker.style.left = `${percentage * 100}%`;
+        });
+        tile.appendChild(videoPreview);
+      } else if (model.type === "audio") {
+        const audioTile = document.createElement("div");
+        audioTile.className = "audio-tile";
+        const audioHeader = document.createElement("div");
+        audioHeader.className = "audio-header";
+        const ext = model.name.split('.').pop().toUpperCase();
+        audioHeader.innerHTML = '<i class="fa fa-music"></i> ' + ext;
+        const audioControls = document.createElement("div");
+        audioControls.className = "audio-controls";
+        const audioElem = document.createElement("audio");
+        audioElem.src = URL.createObjectURL(model.file);
+        audioElem.controls = true;
+        audioControls.appendChild(audioElem);
+        audioTile.appendChild(audioHeader);
+        audioTile.appendChild(audioControls);
+        tile.appendChild(audioTile);
+      } else if (model.type === "image") {
+        const imagePreview = document.createElement("div");
+        imagePreview.className = "image-preview";
+        const imgElem = document.createElement("img");
+        imgElem.src = URL.createObjectURL(model.file);
+        imgElem.loading = "lazy";
+        imagePreview.appendChild(imgElem);
+        tile.appendChild(imagePreview);
+      }
+      // Append file name
+      const nameDiv = document.createElement("div");
+      nameDiv.className = (model.type === "video") ? "video-name" : "model-name";
+      nameDiv.textContent = model.name;
+      tile.appendChild(nameDiv);
+    }
+
+    // Utility: Format seconds to HH:MM:SS
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      return `${h > 0 ? `${h}:` : ''}${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // FBXViewer class using Three.js
+    class FBXViewer {
+      constructor(container) {
+        this.container = container;
+        this.init();
+      }
+      async init() {
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(45, 200/180, 0.1, 1000);
+        this.camera.position.set(0, 1.6, 3);
+        this.renderer = new THREE.WebGLRenderer({antialias: true});
+        this.renderer.setSize(200, 180);
+        this.renderer.setClearColor(0x3a3a3a);
+        this.container.appendChild(this.renderer.domElement);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        this.scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(0.5, 1, 0.5);
+        this.scene.add(directionalLight);
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.05;
+        this.mixer = null;
+        this.clock = new THREE.Clock();
+        this.animate();
+      }
+      animate() {
+        requestAnimationFrame(() => this.animate());
+        if (this.mixer) { this.mixer.update(this.clock.getDelta()); }
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
+      }
+      loadModel(url) {
+        new FBXLoader().load(url, (object) => {
+          const box = new THREE.Box3().setFromObject(object);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 1.5 / maxDim;
+          object.scale.set(scale, scale, scale);
+          object.position.sub(center.multiplyScalar(scale));
+          this.scene.add(object);
+          if (object.animations.length > 0) {
+            this.mixer = new THREE.AnimationMixer(object);
+            const action = this.mixer.clipAction(object.animations[0]);
+            action.play();
+          }
+          this.controls.reset();
+          this.camera.lookAt(0, 0, 0);
+        });
+      }
+    }
+
+    // Retrieve files from a directory handle (used in folder picker)
+    async function getFilesFromDirectory(dirHandle, recursive) {
+      let files = [];
+      for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === "file") {
+          files.push({ name, handle });
+        } else if (handle.kind === "directory" && recursive) {
+          const subFiles = await getFilesFromDirectory(handle, true);
+          files = files.concat(subFiles);
+        }
+      }
+      return files;
+    }
+
+    // Update filtered files based on filter checkboxes
+    function updateFilteredModelFiles() {
+      filteredModelFiles = modelFiles.filter(item => {
+        if (item.type === 'fbx' && !filterFBX.checked) return false;
+        if (item.type === 'glb' && !filterGLB.checked) return false;
+        if (item.type === 'video' && !filterVideo.checked) return false;
+        if (item.type === 'audio' && !filterAudio.checked) return false;
+        if (item.type === 'image' && !filterImage.checked) return false;
+        return true;
+      });
+    }
+
+    // Sort files based on selected sort option
+    function sortModelFiles() {
+      const sortValue = sortOptions.value;
+      filteredModelFiles.sort((a, b) => {
+        if (sortValue === 'name') return a.name.localeCompare(b.name);
+        if (sortValue === 'size') return (a.file.size || 0) - (b.file.size || 0);
+        if (sortValue === 'date') return (a.file.lastModified || 0) - (b.file.lastModified || 0);
+        if (sortValue === 'type') return a.type.localeCompare(b.type);
+      });
+    }
+
+    // Process folder selection (via picker)
+    async function handleFolderPick(dirHandle) {
+      console.log("Starting folder processing");
+      modelFiles = [];
+      viewerContainer.innerHTML = "";
+      try {
+        let fileEntries = [];
+        if (loadSubfolders) {
+          console.log("Loading files with subfolders");
+          fileEntries = await getFilesFromDirectory(dirHandle, true);
+        } else {
+          console.log("Loading files from root directory only");
+          for await (const [name, handle] of dirHandle.entries()) {
+            fileEntries.push({ name, handle });
+          }
+        }
+        console.log(`Found ${fileEntries.length} total files`);
+        for (const {name, handle} of fileEntries) {
+          const lowerCaseName = name.toLowerCase();
+          if (
+            lowerCaseName.endsWith(".glb") || lowerCaseName.endsWith(".fbx") ||
+            lowerCaseName.endsWith(".mp4") || lowerCaseName.endsWith(".webm") ||
+            lowerCaseName.endsWith(".ogg") || lowerCaseName.endsWith(".mp3") ||
+            lowerCaseName.endsWith(".wav") ||
+            lowerCaseName.endsWith(".jpg") || lowerCaseName.endsWith(".jpeg") ||
+            lowerCaseName.endsWith(".png") || lowerCaseName.endsWith(".gif")
+          ) {
+            console.log(`Processing file: ${name}`);
+            const file = await handle.getFile();
+            let type = "other";
+            if (lowerCaseName.endsWith(".glb")) { type = "glb"; }
+            else if (lowerCaseName.endsWith(".fbx")) { type = "fbx"; }
+            else if (lowerCaseName.endsWith(".mp4") || lowerCaseName.endsWith(".webm") || lowerCaseName.endsWith(".ogg")) { type = "video"; }
+            else if (lowerCaseName.endsWith(".mp3") || lowerCaseName.endsWith(".wav")) { type = "audio"; }
+            else if (lowerCaseName.endsWith(".jpg") || lowerCaseName.endsWith(".jpeg") || lowerCaseName.endsWith(".png") || lowerCaseName.endsWith(".gif")) { type = "image"; }
+            modelFiles.push({ name, file, type, selected: false });
+            console.log(`Added ${type} file: ${name}`);
+          }
+        }
+        console.log(`Processed ${modelFiles.length} supported files`);
+        updateFilteredModelFiles();
+        sortModelFiles();
+        currentPage = 0;
+        updatePagination();
+        renderPage(currentPage);
+        updateDownloadButtonCount();
+      } catch (error) {
+        console.error("Error in handleFolderPick:", error);
+        alert(`Error: ${error.message}\n\nFailed to access folder contents. Ensure you have permission.`);
+      }
+    }
+
+    function updatePagination() {
+      const totalPages = Math.ceil(filteredModelFiles.length / itemsPerPage);
+      pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+      prevPageBtn.disabled = currentPage === 0;
+      nextPageBtn.disabled = currentPage >= totalPages - 1;
+    }
+
+    // Update download button count
+    function updateDownloadButtonCount() {
+      const count = modelFiles.filter(item => item.selected).length;
+      downloadBtn.textContent = `Download (${count})`;
+    }
+
+    // Store last used directory handle
+    let lastDirectoryHandle = null;
+
+    async function loadFolderFromPath(path) {
+      console.log("Attempting to load folder from path:", path);
+      try {
+        if (lastDirectoryHandle && path) {
+          try {
+            const parts = path.split('\\').filter(p => p);
+            let currentHandle = lastDirectoryHandle;
+            for (const part of parts) {
+              currentHandle = await currentHandle.getDirectoryHandle(part);
+            }
+            folderPathInput.value = path;
+            await handleFolderPick(currentHandle);
+            return;
+          } catch (error) {
+            console.log("Failed to navigate from last handle:", error);
+          }
+        }
+        const dirHandle = await window.showDirectoryPicker({
+          startIn: lastDirectoryHandle || 'desktop'
+        });
+        lastDirectoryHandle = dirHandle;
+        let fullPath = dirHandle.name;
+        try {
+          const relativeParts = [];
+          let current = dirHandle;
+          while (current) {
+            relativeParts.unshift(current.name);
+            current = await current.getParent();
+          }
+          fullPath = relativeParts.join('\\');
+        } catch (error) {
+          console.log("Could not get full path:", error);
+        }
+        folderPathInput.value = fullPath;
+        await handleFolderPick(dirHandle);
+      } catch (error) {
+        console.error("Error loading folder from path:", error);
+        alert(`Error: ${error.message}`);
+      }
+    }
+
+    async function handleFolderSelection() {
+      console.log("Selecting folder");
+      try {
+        const dirHandle = await window.showDirectoryPicker({
+          startIn: lastDirectoryHandle || 'desktop'
+        });
+        lastDirectoryHandle = dirHandle;
+        let fullPath = dirHandle.name;
+        try {
+          const relativeParts = [];
+          let current = dirHandle;
+          while (current) {
+            relativeParts.unshift(current.name);
+            current = await current.getParent();
+          }
+          fullPath = relativeParts.join('\\');
+          console.log("Full path:", fullPath);
+        } catch (error) {
+          console.log("Could not get full path:", error);
+        }
+        folderPathInput.value = fullPath;
+        await handleFolderPick(dirHandle);
+      } catch (error) {
+        console.error("Error selecting folder:", error);
+        alert(`Error: ${error.message}`);
+      }
+    }
+
+    // Drag & Drop Support
+    // Helper: determine file type from name
+    function getFileType(name) {
+      const lower = name.toLowerCase();
+      if (lower.endsWith(".glb")) return "glb";
+      if (lower.endsWith(".fbx")) return "fbx";
+      if (lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".ogg")) return "video";
+      if (lower.endsWith(".mp3") || lower.endsWith(".wav")) return "audio";
+      if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".gif")) return "image";
+      return "other";
+    }
+
+    // Traverse a directory entry; if recursive is true, traverse all subfolders
+    function traverseDirectory(entry, recursive) {
+      return new Promise((resolve, reject) => {
+        let dirReader = entry.createReader();
+        let entries = [];
+        function readEntries() {
+          dirReader.readEntries(async (result) => {
+            if (result.length === 0) {
+              let files = [];
+              for (const e of entries) {
+                if (e.isFile) {
+                  const file = await new Promise(res => e.file(res));
+                  files.push(file);
+                } else if (e.isDirectory && recursive) {
+                  const subFiles = await traverseDirectory(e, recursive);
+                  files = files.concat(subFiles);
+                }
+              }
+              resolve(files);
+            } else {
+              entries = entries.concat(result);
+              readEntries();
+            }
+          });
+        }
+        readEntries();
+      });
+    }
+
+    // Handle drop event for both files and folders
+    async function handleDrop(e) {
+      e.preventDefault();
+      viewerContainer.classList.remove('drag-over');
+      const items = e.dataTransfer.items;
+      let droppedFiles = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const entry = item.webkitGetAsEntry();
+        if (entry) {
+          if (entry.isFile) {
+            const file = item.getAsFile();
+            if (file) droppedFiles.push({ name: file.name, file, type: getFileType(file.name) });
+          } else if (entry.isDirectory) {
+            const filesFromDir = await traverseDirectory(entry, loadSubfolders);
+            droppedFiles = droppedFiles.concat(filesFromDir.map(f => ({ name: f.name, file: f, type: getFileType(f.name) })));
+          }
+        }
+      }
+      for (let fileObj of droppedFiles) {
+        const lower = fileObj.name.toLowerCase();
+        if (
+          lower.endsWith(".glb") || lower.endsWith(".fbx") ||
+          lower.endsWith(".mp4") || lower.endsWith(".webm") ||
+          lower.endsWith(".ogg") || lower.endsWith(".mp3") ||
+          lower.endsWith(".wav") ||
+          lower.endsWith(".jpg") || lower.endsWith(".jpeg") ||
+          lower.endsWith(".png") || lower.endsWith(".gif")
+        ) {
+          modelFiles.push({ name: fileObj.name, file: fileObj.file, type: fileObj.type, selected: false });
+        }
+      }
+      updateFilteredModelFiles();
+      sortModelFiles();
+      currentPage = 0;
+      updatePagination();
+      renderPage(currentPage);
+      updateDownloadButtonCount();
+    }
+
+    viewerContainer.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      viewerContainer.classList.add('drag-over');
+    });
+    viewerContainer.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      viewerContainer.classList.remove('drag-over');
+    });
+    viewerContainer.addEventListener('drop', handleDrop);
+
+    // Event listeners for UI controls
+    folderPathInput.addEventListener("keypress", async (event) => {
+      if (event.key === "Enter") {
+        console.log("Enter key pressed in folder input");
+        await handleFolderSelection();
+      }
+    });
+    folderPickerButton.addEventListener("click", async () => {
+      console.log("Folder picker button clicked");
+      try {
+        await handleFolderSelection();
+      } catch (error) {
+        console.error("Error in folderPicker click:", error);
+        alert(`Error: ${error.message}`);
+      }
+    });
+    darkModeToggle.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+    });
+    itemsPerPageSelect.addEventListener("change", () => {
+      itemsPerPage = parseInt(itemsPerPageSelect.value);
+      currentPage = 0;
+      updatePagination();
+      renderPage(currentPage);
+    });
+    sortOptions.addEventListener("change", () => {
+      sortModelFiles();
+      currentPage = 0;
+      updatePagination();
+      renderPage(currentPage);
+    });
+    prevPageBtn.addEventListener("click", () => {
+      if (currentPage > 0) {
+        currentPage--;
+        renderPage(currentPage);
+        updatePagination();
+      }
+    });
+    nextPageBtn.addEventListener("click", () => {
+      const maxPage = Math.ceil(filteredModelFiles.length / itemsPerPage) - 1;
+      if (currentPage < maxPage) {
+        currentPage++;
+        renderPage(currentPage);
+        updatePagination();
+      }
+    });
+    downloadBtn.addEventListener("click", downloadSelectedFiles);
+    returnButton.addEventListener('click', exitFullscreen);
+    document.addEventListener('keydown', function(event) {
+      if (fullscreenOverlay.style.display === 'flex' && event.key === 'Escape') {
+        exitFullscreen();
+      }
+    });
+    fullscreenOverlay.addEventListener('click', (e) => {
+      if (e.target === fullscreenOverlay) exitFullscreen();
+    });
+
+    // Filter checkbox event listeners to update view immediately
+    filterFBX.addEventListener("change", () => { updateFilteredModelFiles(); sortModelFiles(); currentPage = 0; updatePagination(); renderPage(currentPage); });
+    filterGLB.addEventListener("change", () => { updateFilteredModelFiles(); sortModelFiles(); currentPage = 0; updatePagination(); renderPage(currentPage); });
+    filterVideo.addEventListener("change", () => { updateFilteredModelFiles(); sortModelFiles(); currentPage = 0; updatePagination(); renderPage(currentPage); });
+    filterAudio.addEventListener("change", () => { updateFilteredModelFiles(); sortModelFiles(); currentPage = 0; updatePagination(); renderPage(currentPage); });
+    filterImage.addEventListener("change", () => { updateFilteredModelFiles(); sortModelFiles(); currentPage = 0; updatePagination(); renderPage(currentPage); });
+
+    // Exit fullscreen
+    function exitFullscreen() {
+      fullscreenOverlay.style.display = 'none';
+      if (currentFullscreenViewer) {
+        if (currentFullscreenViewer === fullscreenVideo) {
+          fullscreenVideo.pause();
+          fullscreenVideo.currentTime = 0;
+        } else if (currentFullscreenViewer.cleanup) {
+          currentFullscreenViewer.cleanup();
+        }
+        currentFullscreenViewer = null;
+      }
+    }
+
+    // Fullscreen view handler with improved scaling
+    async function showFullscreen(model) {
+      fullscreenOverlay.style.display = 'flex';
+      fullscreenViewer.innerHTML = '';
+      fullscreenVideo.style.display = 'none';
+      if (model.type === "glb") {
+        const mv = document.createElement("model-viewer");
+        mv.src = URL.createObjectURL(model.file);
+        mv.setAttribute("camera-controls", "");
+        mv.setAttribute("auto-rotate", "");
+        mv.setAttribute("environment-image", "neutral");
+        mv.setAttribute("animation-name", "*");
+        mv.style.width = "100%";
+        mv.style.height = "100%";
+        fullscreenViewer.appendChild(mv);
+        fullscreenViewer.style.display = 'block';
+        currentFullscreenViewer = mv;
+      } else if (model.type === "fbx") {
+        const container = document.createElement('div');
+        container.style.width = '100%';
+        container.style.height = '100%';
+        fullscreenViewer.appendChild(container);
+        fullscreenViewer.style.display = 'block';
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.6, 3);
+        const renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x3a3a3a);
+        container.appendChild(renderer.domElement);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(1, 1, 1).normalize();
+        scene.add(directionalLight);
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.25;
+        controls.enableZoom = true;
+        const mixer = new THREE.AnimationMixer();
+        const clock = new THREE.Clock();
+        new FBXLoader().load(URL.createObjectURL(model.file), (object) => {
+          const box = new THREE.Box3().setFromObject(object);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scaleFactor = Math.min(window.innerWidth, window.innerHeight) / (maxDim * 1.5);
+          object.scale.set(scaleFactor, scaleFactor, scaleFactor);
+          object.position.sub(center.multiplyScalar(scaleFactor));
+          scene.add(object);
+          if (object.animations && object.animations.length > 0) {
+            mixer.clipAction(object.animations[0], object).play();
+          }
+          controls.target.copy(object.position);
+          controls.update();
+        });
+        function animate() {
+          requestAnimationFrame(animate);
+          const delta = clock.getDelta();
+          mixer.update(delta);
+          controls.update();
+          renderer.render(scene, camera);
+        }
+        animate();
+        window.addEventListener('resize', onWindowResize, false);
+        currentFullscreenViewer = {
+          container,
+          scene,
+          camera,
+          renderer,
+          controls,
+          mixer,
+          animate,
+          cleanup: () => {
+            window.removeEventListener('resize', onWindowResize);
+            renderer.dispose();
+          }
+        };
+        function onWindowResize() {
+          camera.aspect = window.innerWidth/window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+      } else if (model.type === "video") {
+        fullscreenViewer.style.display = 'none';
+        fullscreenVideo.style.display = 'block';
+        fullscreenVideo.src = URL.createObjectURL(model.file);
+        fullscreenVideo.play();
+        currentFullscreenViewer = fullscreenVideo;
+      } else if (model.type === "image") {
+        fullscreenViewer.style.display = 'block';
+        fullscreenVideo.style.display = 'none';
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(model.file);
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.objectFit = "contain";
+        fullscreenViewer.innerHTML = "";
+        fullscreenViewer.appendChild(img);
+        currentFullscreenViewer = img;
+      }
+    }
+
+    // Download selected files as a zip archive
+    async function downloadSelectedFiles() {
+      const selectedItems = modelFiles.filter(item => item.selected);
+      if (selectedItems.length === 0) {
+        alert("No files selected for download.");
+        return;
+      }
+      const zip = new JSZip();
+      for (const item of selectedItems) {
+        zip.file(item.name, item.file);
+      }
+      zip.generateAsync({ type: "blob" }).then(function(content) {
+        saveAs(content, "download.zip");
+      });
+    }
+  </script>
+</body>
+</html>
