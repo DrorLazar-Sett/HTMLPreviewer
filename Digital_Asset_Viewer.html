@@ -346,15 +346,22 @@
       background: rgba(0,0,0,0.9);
       z-index: 1000;
       display: none;
-      justify-content: center;
     }
     #fullscreenContent {
-      position: relative;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       width: 100%;
       height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
+      pointer-events: none;
+    }
+    
+    #fullscreenViewer, #fullscreenVideo {
+      pointer-events: auto;
     }
     #fullscreenVideo {
       display: block;
@@ -925,7 +932,7 @@
 
     async function showFullscreen(model) {
       // Fullscreen view handler - Manages expanded view of assets with type-specific display logic
-      fullscreenOverlay.style.display = 'block';
+      fullscreenOverlay.style.display = 'flex';
       fullscreenViewer.innerHTML = '';
       fullscreenVideo.style.display = 'none';
       if (model.type === "glb") {
@@ -942,7 +949,7 @@
         currentFullscreenViewer = mv;
       } else if (model.type === "fbx") {
         const container = document.createElement('div');
-        container.style.width = '100%';
+        container.style.width = '50%';
         container.style.height = '100%';
         fullscreenViewer.appendChild(container);
         fullscreenViewer.style.display = 'block';
@@ -950,7 +957,7 @@
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         camera.position.set(0, 1.6, 3);
         const renderer = new THREE.WebGLRenderer({antialias: true});
-        renderer.setSize(window.innerWidth*0.5, window.innerHeight);
+        renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColor(0x3a3a3a);
         container.appendChild(renderer.domElement);
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -1102,7 +1109,7 @@
       try {
         // Show directory picker
         const dirHandle = await window.showDirectoryPicker({
-          startIn: lastDirectoryHandle || 'desktop'
+          startIn: lastDirectoryHandle || 'downloads'
         });
         
         // Store for future use
@@ -1186,6 +1193,14 @@
     returnButton.addEventListener('click', exitFullscreen);
     document.addEventListener('keydown', function(event) {
       if (fullscreenOverlay.style.display === 'block' && event.key === 'Escape') {
+        exitFullscreen();
+      }
+    });
+
+    // Add click handler to close fullscreen when clicking outside content
+    fullscreenOverlay.addEventListener('click', function(event) {
+      // Check if click was directly on the overlay (not its children)
+      if (event.target === fullscreenOverlay) {
         exitFullscreen();
       }
     });
@@ -1290,8 +1305,7 @@
     const filterCheckboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]');
     filterCheckboxes.forEach(checkbox => {
       checkbox.addEventListener('change', () => {
-        updateFilteredModelFiles();
-        currentPage = 0;
+        updateFilteredModelFiles();        currentPage = 0;
         updatePagination();
         renderPage(currentPage);
       });
