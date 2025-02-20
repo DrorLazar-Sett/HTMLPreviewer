@@ -156,7 +156,7 @@
       gap: 16px;
       padding: 20px;
       margin-top: 60px; /* leave room for fixed header */
-      height: 250px;
+      
     }
 
     .model-tile {
@@ -233,10 +233,14 @@
     }
     /* All preview tiles fixed to 200x180px */
     model-viewer, .three-viewer, .video-preview {
+      border-radius: 4px;
       width: 200px;
       height: 180px;
       background-color: #3a3a3a;
       --poster-color: transparent;
+      position: relative;
+    }
+    .video-preview {
       position: relative;
     }
     .video-preview video {
@@ -244,14 +248,44 @@
       height: 100%;
       object-fit: contain;
     }
+    .scrub-bar-container {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 20px;
+      background: rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+    }
+    .scrub-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0;
+      background: rgba(255, 255, 255, 0.2);
+      pointer-events: none;
+    }
+    .time-marker {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: rgba(200, 200, 200, 0.8);
+      padding: 2px 4px;
+      font-size: 12px;
+      color: black;
+      transform: translateX(50%);
+      border-radius: 2px;
+    }
     /* Audio preview tiles - Custom styling for audio file previews with controls */
     .audio-tile {
+      
       display: flex;
       flex-direction: column;
-      height: 160px;
+      height: 180px;
       background-color: #2a2a2a;
       border: 1px solid #444;
-      border-radius: 6px;
+      border-radius: 4px;
       overflow: hidden;
     }
     .audio-header {
@@ -272,10 +306,10 @@
       align-items: center;
       justify-content: center;
       background-color: #2a2a2a;
-      padding: 4px;
+      padding: 1px;
     }
     .audio-controls audio {
-      width: 90%;
+      width: 100%;
       background: transparent;
     }
     /* Make native dark-mode audio controls appear white */
@@ -286,7 +320,7 @@
     /* Image preview tiles - Styling for image thumbnails and full-size views */
     .image-preview img {
       width: 100%;
-      height: 160px;
+      height: 180px;
       object-fit: cover;
       border-radius: 4px;
     }
@@ -826,17 +860,35 @@
           scrubBar.appendChild(timeMarker);
           videoPreview.appendChild(scrubBarContainer);
           
-          videoPreview.addEventListener('mousemove', (e) => {
+          let isDragging = false;
+
+          scrubBarContainer.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            updateVideoTime(e);
+          });
+
+          document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            updateVideoTime(e);
+          });
+
+          document.addEventListener('mouseup', () => {
+            isDragging = false;
+          });
+
+          function updateVideoTime(e) {
             if (!video.duration) return;
-            const rect = videoPreview.getBoundingClientRect();
-            const x = e.clientX - rect.left;
+            const rect = scrubBarContainer.getBoundingClientRect();
+            const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
             const percentage = x / rect.width;
             const newTime = percentage * video.duration;
             video.currentTime = newTime;
             scrubBar.style.width = `${percentage * 100}%`;
             timeMarker.textContent = formatTime(newTime);
             timeMarker.style.left = `${percentage * 100}%`;
-          });
+          }
+
+          scrubBarContainer.addEventListener('mousemove', updateVideoTime);
           
           placeholder.replaceWith(videoPreview);
           
