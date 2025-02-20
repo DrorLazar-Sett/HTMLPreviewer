@@ -74,6 +74,22 @@
       gap: 10px;
       justify-content: center;
     }
+    /* Input field styles */
+    .folder-input {
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 8px;
+      margin-right: 10px;
+      width: 300px;
+      font-size: 1rem;
+    }
+    body:not(.dark-mode) .folder-input {
+      background-color: #fff;
+      color: #333;
+      border-color: #ccc;
+    }
     /* Common button styles - Consistent styling for all interactive buttons */
     .btn {
       display: inline-flex;
@@ -321,6 +337,7 @@
   <div id="topBar">
     <h1>Digital Asset Viewer</h1>
     <div class="fileControls">
+      <input type="text" id="folderPath" class="folder-input" placeholder="Enter folder path">
       <button id="folderPicker" class="btn" title="Pick a folder">
         <i class="fa fa-folder-open"></i>
       </button>
@@ -368,6 +385,7 @@
 
   <script>
     const folderPickerButton = document.getElementById("folderPicker");
+    const folderPathInput = document.getElementById("folderPath");
     const darkModeToggle = document.getElementById("darkModeToggle");
     const subfolderToggle = document.getElementById("subfolderToggle");
     const viewerContainer = document.getElementById("viewerContainer");
@@ -736,8 +754,23 @@
       try {
         if (!window.isSecureContext) throw new Error('Secure context required');
         if (window !== window.parent) throw new Error('Cannot be used in iframes');
-        const dirHandle = await window.showDirectoryPicker();
-        handleFolderPick(dirHandle);
+        
+        // Check if there's a path in the input field
+        const manualPath = folderPathInput.value.trim();
+        if (manualPath) {
+          try {
+            const dirHandle = await window.showDirectoryPicker({
+              startIn: manualPath
+            });
+            handleFolderPick(dirHandle);
+          } catch (error) {
+            console.error("Error accessing specified path:", error);
+            alert(`Error: Could not access the specified path. Please check if the path is correct and you have permission to access it.`);
+          }
+        } else {
+          const dirHandle = await window.showDirectoryPicker();
+          handleFolderPick(dirHandle);
+        }
       } catch (error) {
         console.error("Error in folderPicker click:", error);
         alert(`Error: ${error.message}\n\nPlease use HTTPS/localhost and allow file access`);
@@ -796,6 +829,7 @@
     }
 
     // Filter event setup - Initializes file type filter checkboxes and their change handlers
+    const filterCheckboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]');
     filterCheckboxes.forEach(checkbox => {
       checkbox.addEventListener('change', () => {
         updateFilteredModelFiles();
