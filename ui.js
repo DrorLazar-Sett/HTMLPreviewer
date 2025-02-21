@@ -5,6 +5,8 @@ const darkModeToggle = document.getElementById("darkModeToggle");
 const subfolderToggle = document.getElementById("subfolderToggle");
 const prevPageBtn = document.getElementById("prevPage");
 const nextPageBtn = document.getElementById("nextPage");
+const sizeSlider = document.getElementById("sizeSlider");
+const sizeValue = document.getElementById("sizeValue");
 const pageInfo = document.getElementById("pageInfo");
 const fullscreenOverlay = document.getElementById('fullscreenOverlay');
 const returnButton = document.getElementById('returnButton');
@@ -150,6 +152,17 @@ export function toggleSelectionUI(fileName) {
 // Theme toggle handler
 darkModeToggle.addEventListener("click", () => {
   document.body.classList.toggle("dark-mode");
+});
+
+// Initialize tile size
+document.documentElement.style.setProperty('--tile-size', `${sizeSlider.value}px`);
+sizeValue.textContent = `${sizeSlider.value}px`;
+
+// Size slider handler
+sizeSlider.addEventListener("input", (e) => {
+  const size = e.target.value;
+  document.documentElement.style.setProperty('--tile-size', `${size}px`);
+  sizeValue.textContent = `${size}px`;
 });
 
 // Subfolder toggle handler
