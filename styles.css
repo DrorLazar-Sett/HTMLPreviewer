@@ -455,6 +455,12 @@ model-viewer, .three-viewer, .video-preview {
   --poster-color: transparent;
   position: relative;
 }
+
+/* Ensure Three.js canvas fills its container */
+.three-viewer canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 .video-preview {
   position: relative;
 }

@@ -10,10 +10,11 @@ class FBXViewer {
   }
   async init() {
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(45, 200/180, 0.1, 1000);
+    const containerRect = this.container.getBoundingClientRect();
+    this.camera = new THREE.PerspectiveCamera(45, containerRect.width/containerRect.height, 0.1, 1000);
     this.camera.position.set(0, 1.6, 3);
     this.renderer = new THREE.WebGLRenderer({antialias: true});
-    this.renderer.setSize(200, 180);
+    this.renderer.setSize(containerRect.width, containerRect.height);
     this.renderer.setClearColor(0x3a3a3a);
     this.container.appendChild(this.renderer.domElement);
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -27,7 +28,18 @@ class FBXViewer {
     this.mixer = null;
     this.clock = new THREE.Clock();
     this.animate();
+    // Add resize observer
+    this.resizeObserver = new ResizeObserver(() => this.onResize());
+    this.resizeObserver.observe(this.container);
   }
+
+  onResize() {
+    const containerRect = this.container.getBoundingClientRect();
+    this.renderer.setSize(containerRect.width, containerRect.height);
+    this.camera.aspect = containerRect.width / containerRect.height;
+    this.camera.updateProjectionMatrix();
+  }
+
   animate() {
     requestAnimationFrame(() => this.animate());
     if (this.mixer) { this.mixer.update(this.clock.getDelta()); }
