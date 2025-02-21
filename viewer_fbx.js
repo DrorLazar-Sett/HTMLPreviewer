@@ -10,13 +10,16 @@ class FBXViewer {
   }
   async init() {
     this.scene = new THREE.Scene();
-    const containerRect = this.container.getBoundingClientRect();
-    this.camera = new THREE.PerspectiveCamera(45, containerRect.width/containerRect.height, 0.1, 1000);
+    const width = this.container.offsetWidth || this.container.getBoundingClientRect().width;
+    const height = this.container.offsetHeight || this.container.getBoundingClientRect().height;
+    this.camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
     this.camera.position.set(0, 1.6, 3);
     this.renderer = new THREE.WebGLRenderer({antialias: true});
-    this.renderer.setSize(containerRect.width, containerRect.height);
     this.renderer.setClearColor(0x3a3a3a);
     this.container.appendChild(this.renderer.domElement);
+    this.renderer.setSize(width, height, true);
+    this.renderer.domElement.style.width = '100%';
+    this.renderer.domElement.style.height = '100%';
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     this.scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -35,8 +38,10 @@ class FBXViewer {
 
   onResize() {
     const containerRect = this.container.getBoundingClientRect();
-    this.renderer.setSize(containerRect.width, containerRect.height);
-    this.camera.aspect = containerRect.width / containerRect.height;
+    const width = this.container.offsetWidth || containerRect.width;
+    const height = this.container.offsetHeight || containerRect.height;
+    this.renderer.setSize(width, height, true);
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }
 

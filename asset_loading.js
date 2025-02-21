@@ -433,19 +433,28 @@ async function showFullscreen(model) {
     
   } else if (model.type === "fbx") {
     const container = document.createElement('div');
-    container.style.width = '50%';
+    container.style.width = '100%';
     container.style.height = '100%';
     fullscreenViewer.appendChild(container);
     fullscreenViewer.style.display = 'block';
     
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    
+    // Wait for container to be in DOM
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const containerRect = container.getBoundingClientRect();
+    
+    const camera = new THREE.PerspectiveCamera(75, containerRect.width/containerRect.height, 0.1, 1000);
     camera.position.set(0, 1.6, 3);
     
     const renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x3a3a3a);
     container.appendChild(renderer.domElement);
+    
+    // Ensure renderer size matches container
+    renderer.setSize(containerRect.width, containerRect.height, true);
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
     
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
@@ -491,9 +500,12 @@ async function showFullscreen(model) {
     animate();
     
     function onWindowResize() {
-      camera.aspect = window.innerWidth/window.innerHeight;
+      const containerRect = container.getBoundingClientRect();
+      camera.aspect = containerRect.width / containerRect.height;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setSize(containerRect.width, containerRect.height, true);
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
     }
     
     window.addEventListener('resize', onWindowResize, false);
