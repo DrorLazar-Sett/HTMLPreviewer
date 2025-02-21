@@ -136,20 +136,23 @@ subfolderToggle.addEventListener("click", () => {
   setLoadSubfolders(!_loadSubfolders);
 });
 
+// Import currentFullscreenViewer from asset_loading.js
+import { currentFullscreenViewer } from './asset_loading.js';
+
 // Event listeners
 returnButton.addEventListener('click', () => {
-  exitFullscreen();
+  exitFullscreen(currentFullscreenViewer);
 });
 
 document.addEventListener('keydown', function(event) {
   if (fullscreenOverlay.style.display === 'block' && event.key === 'Escape') {
-    exitFullscreen();
+    exitFullscreen(currentFullscreenViewer);
   }
 });
 
 fullscreenOverlay.addEventListener('click', function(event) {
   if (event.target === fullscreenOverlay) {
-    exitFullscreen();
+    exitFullscreen(currentFullscreenViewer);
   }
 });
 

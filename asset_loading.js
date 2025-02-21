@@ -235,6 +235,7 @@ async function loadTileContent(tile) {
       const video = document.createElement("video");
       video.src = URL.createObjectURL(model.file);
       video.muted = true;
+      video.className = 'preview-video'; // Add class for easy selection
       videoPreview.appendChild(video);
 
       const scrubBarContainer = document.createElement("div");
@@ -290,6 +291,18 @@ async function loadTileContent(tile) {
       const audioElem = document.createElement("audio");
       audioElem.src = URL.createObjectURL(model.file);
       audioElem.controls = true;
+      
+      // Add event listener to stop other audio when this one starts playing
+      audioElem.addEventListener('play', () => {
+        // Stop all other audio elements
+        document.querySelectorAll('audio').forEach(audio => {
+          if (audio !== audioElem && !audio.paused) {
+            audio.pause();
+            audio.currentTime = 0;
+          }
+        });
+      });
+      
       audioControls.appendChild(audioElem);
       audioTile.appendChild(audioHeader);
       audioTile.appendChild(audioControls);
@@ -756,6 +769,14 @@ async function handleDrop(e) {
     alert(`Error processing files: ${error.message}`);
   }
 }
+
+// Add event listener to stop all preview videos when returning to grid
+document.getElementById('returnButton').addEventListener('click', () => {
+  document.querySelectorAll('.preview-video').forEach(video => {
+    video.pause();
+    video.currentTime = 0;
+  });
+});
 
 // Add drag and drop event listeners
 viewerContainer.addEventListener('dragenter', handleDragOver);
