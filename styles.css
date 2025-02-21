@@ -289,11 +289,24 @@ select {
   background: #2a2a2a;
   text-align: center;
   padding: 12px;
-  transition: background 0.3s, transform 0.2s, border-color 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
   position: relative;
   min-height: 220px; /* Height for tile + name */
-  cursor: pointer;
+  cursor: default;
+  will-change: transform;
+  animation: tileAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes tileAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .model-tile.selected {
@@ -308,19 +321,36 @@ select {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
+  background: transparent;
   border: 2px solid #666;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.selection-indicator:hover {
+  border-color: #9b77ff;
+  transform: scale(1.1);
 }
 
 .model-tile.selected .selection-indicator {
   background: #9b77ff;
   border-color: #fff;
+}
+
+.selection-indicator i {
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.model-tile.selected .selection-indicator i {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .placeholder {

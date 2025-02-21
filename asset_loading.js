@@ -317,7 +317,10 @@ function renderPage(pageIndex) {
       if (e.target.closest('.fullscreen-btn') || e.target.closest('.scrub-bar-container')) {
         return;
       }
-      toggleSelectionUI(model.name, renderPage);
+      // Only toggle selection when clicking the selection indicator
+      if (e.target.closest('.selection-indicator')) {
+        toggleSelectionUI(model.name, renderPage);
+      }
     });
 
     if (model.type !== "audio") {
@@ -467,7 +470,12 @@ async function showFullscreen(model) {
     fullscreenVideo.style.display = 'block';
     fullscreenVideo.src = URL.createObjectURL(model.file);
     fullscreenVideo.play();
-    currentFullscreenViewer = fullscreenVideo;
+    // Store reference to preview video for cleanup
+    const previewVideo = viewerContainer.querySelector(`[data-model-name="${model.name}"] video`);
+    currentFullscreenViewer = {
+      type: 'video',
+      previewVideo: previewVideo
+    };
     
   } else if (model.type === "image") {
     fullscreenViewer.style.display = 'block';
@@ -483,9 +491,17 @@ async function showFullscreen(model) {
   }
 }
 
+let isDirectoryPickerActive = false;
+
 async function handleFolderSelection() {
   console.log("Selecting folder");
+  if (isDirectoryPickerActive) {
+    console.log("Directory picker is already active");
+    return;
+  }
+  
   try {
+    isDirectoryPickerActive = true;
     const dirHandle = await window.showDirectoryPicker({
       startIn: lastDirectoryHandle || 'downloads'
     });
@@ -510,13 +526,23 @@ async function handleFolderSelection() {
     await handleFolderPick(dirHandle);
   } catch (error) {
     console.error("Error selecting folder:", error);
-    alert(`Error: ${error.message}`);
+    if (error.name !== 'AbortError') {
+      alert(`Error: ${error.message}`);
+    }
+  } finally {
+    isDirectoryPickerActive = false;
   }
 }
 
 async function loadFolderFromPath(path) {
   console.log("Attempting to load folder from path:", path);
+  if (isDirectoryPickerActive) {
+    console.log("Directory picker is already active");
+    return;
+  }
+  
   try {
+    isDirectoryPickerActive = true;
     if (lastDirectoryHandle && path) {
       try {
         const parts = path.split('\\').filter(p => p);
@@ -557,7 +583,11 @@ async function loadFolderFromPath(path) {
     await handleFolderPick(dirHandle);
   } catch (error) {
     console.error("Error loading folder from path:", error);
-    alert(`Error: ${error.message}`);
+    if (error.name !== 'AbortError') {
+      alert(`Error: ${error.message}`);
+    }
+  } finally {
+    isDirectoryPickerActive = false;
   }
 }
 

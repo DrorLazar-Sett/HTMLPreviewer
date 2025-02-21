@@ -60,9 +60,15 @@ export function updatePagination(totalPages) {
 export function exitFullscreen(currentFullscreenViewer) {
   fullscreenOverlay.style.display = 'none';
   if (currentFullscreenViewer) {
-    if (currentFullscreenViewer === fullscreenVideo) {
+    if (currentFullscreenViewer === fullscreenVideo || currentFullscreenViewer.type === 'video') {
+      // Stop both fullscreen video and any preview video
       fullscreenVideo.pause();
       fullscreenVideo.currentTime = 0;
+      fullscreenVideo.src = '';
+      if (currentFullscreenViewer.previewVideo) {
+        currentFullscreenViewer.previewVideo.pause();
+        currentFullscreenViewer.previewVideo.currentTime = 0;
+      }
     } else if (currentFullscreenViewer.cleanup) {
       currentFullscreenViewer.cleanup();
     }
