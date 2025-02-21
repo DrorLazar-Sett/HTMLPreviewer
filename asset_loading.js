@@ -189,7 +189,21 @@ async function handleFolderPick(dirHandle) {
           lowerCaseName.endsWith(".jpg") || lowerCaseName.endsWith(".jpeg") ||
           lowerCaseName.endsWith(".png") || lowerCaseName.endsWith(".gif")
         ) { type = "image"; }
-        modelFiles.push({ name, file, type });
+        const getFullPath = async (handle) => {
+          const relativeParts = [];
+          let current = handle;
+          while (current) {
+            relativeParts.unshift(current.name);
+            try {
+              current = await current.getParent();
+            } catch {
+              break;
+            }
+          }
+          return relativeParts.join('\\');
+        };
+        const fullPath = await getFullPath(handle);
+        modelFiles.push({ name, file, type, fullPath });
         console.log(`Added ${type} file: ${name}`);
       }
     }

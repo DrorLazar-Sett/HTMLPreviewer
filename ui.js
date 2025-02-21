@@ -98,11 +98,7 @@ export function saveSelection(modelFiles) {
   const content = Array.from(_selectedFiles)
     .map(fileName => {
       const model = modelFiles.find(m => m.name === fileName);
-      if (!model) return fileName;
-      
-      // Get the full path from the input field as base directory
-      const baseDir = document.getElementById('folderPath').value;
-      return baseDir ? `${baseDir}\\${fileName}` : fileName;
+      return model ? model.fullPath : fileName;
     })
     .join('\n');
     
