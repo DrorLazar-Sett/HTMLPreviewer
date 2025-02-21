@@ -43,7 +43,7 @@ selectionOptions.forEach(option => {
     });
   } else if (option.textContent.includes('Clear Selection')) {
     option.addEventListener('click', () => {
-      UI.clearSelection(AssetLoading.renderPage); // Pass renderPage callback to refresh tiles
+      UI.clearSelection();
     });
   }
 });

@@ -83,10 +83,13 @@ export function updateSelectionCount() {
   selectionDropdown.innerHTML = `${count} Selected <i class="fa fa-chevron-down"></i>`;
 }
 
-export function clearSelection(renderCallback) {
+export function clearSelection() {
   _selectedFiles.clear();
   updateSelectionCount();
-  if (renderCallback) renderCallback(_currentPage);
+  // Update selection state without full re-render
+  document.querySelectorAll('.model-tile').forEach(tile => {
+    tile.classList.remove('selected');
+  });
 }
 
 export async function downloadSelected(modelFiles) {
@@ -109,14 +112,18 @@ export async function downloadSelected(modelFiles) {
 }
 
 // Selection management function for UI interaction
-export function toggleSelectionUI(fileName, renderCallback) {
-  if (_selectedFiles.has(fileName)) {
+export function toggleSelectionUI(fileName) {
+  const isSelected = _selectedFiles.has(fileName);
+  const tile = document.querySelector(`.model-tile[data-model-name="${fileName}"]`);
+  
+  if (isSelected) {
     _selectedFiles.delete(fileName);
+    tile?.classList.remove('selected');
   } else {
     _selectedFiles.add(fileName);
+    tile?.classList.add('selected');
   }
   updateSelectionCount();
-  if (renderCallback) renderCallback(_currentPage);
 }
 
 // Theme toggle handler

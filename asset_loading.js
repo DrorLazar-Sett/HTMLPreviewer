@@ -82,6 +82,23 @@ function createPlaceholder(type) {
   return placeholder;
 }
 
+// Cache for tile content
+const tileCache = new Map();
+
+// File retrieval function - Recursively collects files from selected directory
+async function getFilesFromDirectory(dirHandle, recursive) {
+  let files = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === "file") {
+      files.push({ name, handle });
+    } else if (handle.kind === "directory" && recursive) {
+      const subFiles = await getFilesFromDirectory(handle, true);
+      files = files.concat(subFiles);
+    }
+  }
+  return files;
+}
+
 // Sort files based on current sort settings
 function sortFiles() {
   const currentSort = getCurrentSort();
@@ -103,24 +120,14 @@ function sortFiles() {
     }
     return currentSort.direction === 'asc' ? comparison : -comparison;
   });
-}
-
-// File retrieval function - Recursively collects files from selected directory
-async function getFilesFromDirectory(dirHandle, recursive) {
-  let files = [];
-  for await (const [name, handle] of dirHandle.entries()) {
-    if (handle.kind === "file") {
-      files.push({ name, handle });
-    } else if (handle.kind === "directory" && recursive) {
-      const subFiles = await getFilesFromDirectory(handle, true);
-      files = files.concat(subFiles);
-    }
-  }
-  return files;
+  
+  // Re-render the current page with sorted files
+  renderPage(getCurrentPage());
 }
 
 // Filter management - Updates displayed assets based on active file type filters
 function updateFilteredModelFiles() {
+  const previousLength = filteredModelFiles.length;
   filteredModelFiles = modelFiles.filter(item => {
     if (item.type === 'fbx' && !filterFBX.checked) return false;
     if (item.type === 'glb' && !filterGLB.checked) return false;
@@ -129,6 +136,12 @@ function updateFilteredModelFiles() {
     if (item.type === 'image' && !filterImage.checked) return false;
     return true;
   });
+
+  // Only trigger full re-render if filter actually changed the visible items
+  if (previousLength !== filteredModelFiles.length) {
+    setCurrentPage(0);
+    renderPage(getCurrentPage());
+  }
 }
 
 async function handleFolderPick(dirHandle) {
@@ -317,9 +330,8 @@ function renderPage(pageIndex) {
       if (e.target.closest('.fullscreen-btn') || e.target.closest('.scrub-bar-container')) {
         return;
       }
-      // Only toggle selection when clicking the selection indicator
       if (e.target.closest('.selection-indicator')) {
-        toggleSelectionUI(model.name, renderPage);
+        toggleSelectionUI(model.name);
       }
     });
 
