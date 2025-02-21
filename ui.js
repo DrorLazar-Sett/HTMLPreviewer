@@ -92,6 +92,31 @@ export function clearSelection() {
   });
 }
 
+export function saveSelection(modelFiles) {
+  if (_selectedFiles.size === 0) return;
+  
+  const content = Array.from(_selectedFiles)
+    .map(fileName => {
+      const model = modelFiles.find(m => m.name === fileName);
+      if (!model) return fileName;
+      
+      // Get the full path from the input field as base directory
+      const baseDir = document.getElementById('folderPath').value;
+      return baseDir ? `${baseDir}\\${fileName}` : fileName;
+    })
+    .join('\n');
+    
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'selected_files.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export async function downloadSelected(modelFiles) {
   if (_selectedFiles.size === 0) return;
 

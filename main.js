@@ -37,15 +37,20 @@ UI.subfolderToggle.addEventListener("click", async () => {
 // Selection dropdown actions
 const selectionOptions = document.querySelectorAll('.selection-option');
 selectionOptions.forEach(option => {
-  if (option.textContent.includes('Download Selected')) {
-    option.addEventListener('click', () => {
-      UI.downloadSelected(AssetLoading.modelFiles); // Pass modelFiles for download
-    });
-  } else if (option.textContent.includes('Clear Selection')) {
-    option.addEventListener('click', () => {
-      UI.clearSelection();
-    });
-  }
+  const action = option.dataset.action;
+  option.addEventListener('click', () => {
+    switch(action) {
+      case 'download':
+        UI.downloadSelected(AssetLoading.modelFiles);
+        break;
+      case 'save':
+        UI.saveSelection(AssetLoading.modelFiles);
+        break;
+      case 'clear':
+        UI.clearSelection();
+        break;
+    }
+  });
 });
 
 

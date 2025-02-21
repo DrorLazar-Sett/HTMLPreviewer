@@ -22,11 +22,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 const folderPickerButton = document.getElementById("folderPicker");
 const folderPathInput = document.getElementById("folderPath");
 const viewerContainer = document.getElementById("viewerContainer");
-const filterFBX = document.getElementById('filter-fbx');
-const filterGLB = document.getElementById('filter-glb');
-const filterVideo = document.getElementById('filter-video');
-const filterAudio = document.getElementById('filter-audio');
-const filterImage = document.getElementById('filter-image');
+const filterOptions = document.querySelectorAll('.filter-option');
 const itemsOptions = document.querySelectorAll('.items-option');
 const itemsBtn = document.querySelector('.dropdown-btn');
 const sortOptions = document.querySelectorAll('.sort-option');
@@ -125,17 +121,13 @@ function sortFiles() {
   renderPage(getCurrentPage());
 }
 
+// Initialize active filters
+const activeFilters = new Set(['fbx', 'glb', 'video', 'audio', 'image']);
+
 // Filter management - Updates displayed assets based on active file type filters
 function updateFilteredModelFiles() {
   const previousLength = filteredModelFiles.length;
-  filteredModelFiles = modelFiles.filter(item => {
-    if (item.type === 'fbx' && !filterFBX.checked) return false;
-    if (item.type === 'glb' && !filterGLB.checked) return false;
-    if (item.type === 'video' && !filterVideo.checked) return false;
-    if (item.type === 'audio' && !filterAudio.checked) return false;
-    if (item.type === 'image' && !filterImage.checked) return false;
-    return true;
-  });
+  filteredModelFiles = modelFiles.filter(item => activeFilters.has(item.type));
 
   // Only trigger full re-render if filter actually changed the visible items
   if (previousLength !== filteredModelFiles.length) {
@@ -143,6 +135,22 @@ function updateFilteredModelFiles() {
     renderPage(getCurrentPage());
   }
 }
+
+// Initialize filter options
+filterOptions.forEach(option => {
+  const type = option.dataset.type;
+  option.classList.add('active');
+  
+  option.addEventListener('click', () => {
+    const isActive = option.classList.toggle('active');
+    if (isActive) {
+      activeFilters.add(type);
+    } else {
+      activeFilters.delete(type);
+    }
+    updateFilteredModelFiles();
+  });
+});
 
 async function handleFolderPick(dirHandle) {
   console.log("Starting folder processing");
@@ -633,15 +641,6 @@ folderPickerButton.addEventListener("click", async () => {
   }
 });
 
-const filterCheckboxes = document.querySelectorAll('.dropdown-content input[type="checkbox"]');
-filterCheckboxes.forEach(checkbox => {
-  checkbox.addEventListener('change', () => {
-    updateFilteredModelFiles();
-    setCurrentPage(0);
-    updatePagination(Math.ceil(filteredModelFiles.length / getItemsPerPage()));
-    renderPage(getCurrentPage());
-  });
-});
 
 itemsOptions.forEach(option => {
   option.addEventListener('click', () => {
@@ -811,11 +810,6 @@ export {
   folderPickerButton,
   folderPathInput,
   viewerContainer,
-  filterFBX,
-  filterGLB,
-  filterVideo,
-  filterAudio,
-  filterImage,
   itemsOptions,
   itemsBtn,
   sortOptions,

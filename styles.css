@@ -157,48 +157,41 @@ body:not(.dark-mode) .folder-input {
   background-color: #444;
 }
 
-/* Type filter styles */
-.dropdown-content label input[type="checkbox"] {
-  display: none;
+/* Type filter and selection option styles */
+.dropdown-content label.selection-option,
+.dropdown-content label.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
 }
 
-.dropdown-content label span {
-  position: relative;
-  padding-left: 28px;
+.dropdown-content label.selection-option:hover,
+.dropdown-content label.filter-option:hover {
+  background-color: #444;
 }
 
-.dropdown-content label span:before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  border: 2px solid #666;
-  border-radius: 4px;
-  transition: all 0.3s;
+.dropdown-content label.selection-option i,
+.dropdown-content label.filter-option i {
+  width: 16px;
+  text-align: center;
 }
 
-.dropdown-content label:hover span:before {
-  border-color: #888;
+.dropdown-content label.selection-option span,
+.dropdown-content label.filter-option span {
+  flex: 1;
 }
 
-.dropdown-content label input[type="checkbox"]:checked + span:before {
-  background-color: #744caf;
-  border-color: #9f41fd;
+.dropdown-content label.filter-option i {
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
-.dropdown-content label input[type="checkbox"]:checked + span:after {
-  content: '\f00c';
-  font-family: 'Font Awesome 6 Free';
-  font-weight: 900;
-  position: absolute;
-  left: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: white;
-  font-size: 12px;
+.dropdown-content label.filter-option.active i {
+  opacity: 1;
+  color: #9b77ff;
 }
 
 /* Sort and items options styles */

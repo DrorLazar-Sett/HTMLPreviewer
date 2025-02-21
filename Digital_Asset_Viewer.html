@@ -50,11 +50,15 @@
       <div class="dropdown">
         <button id="selectionDropdown" class="btn dropdown-btn">0 Selected <i class="fa fa-chevron-down"></i></button>
         <div class="dropdown-content">
-          <label class="selection-option">
+          <label class="selection-option" data-action="download">
             <i class="fa fa-download"></i>
             <span>Download Selected</span>
           </label>
-          <label class="selection-option">
+          <label class="selection-option" data-action="save">
+            <i class="fa fa-file-text"></i>
+            <span>Save Selection</span>
+          </label>
+          <label class="selection-option" data-action="clear">
             <i class="fa fa-times"></i>
             <span>Clear Selection</span>
           </label>
@@ -77,11 +81,26 @@
       <div class="dropdown">
         <button class="btn dropdown-btn">Type <i class="fa fa-chevron-down"></i></button>
         <div class="dropdown-content">
-          <label><input type="checkbox" id="filter-fbx" checked><span>FBX</span></label>
-          <label><input type="checkbox" id="filter-glb" checked><span>GLB</span></label>
-          <label><input type="checkbox" id="filter-video" checked><span>Video</span></label>
-          <label><input type="checkbox" id="filter-audio" checked><span>Audio</span></label>
-          <label><input type="checkbox" id="filter-image" checked><span>Images</span></label>
+          <label class="filter-option" data-type="fbx">
+            <i class="fa fa-check"></i>
+            <span>FBX</span>
+          </label>
+          <label class="filter-option" data-type="glb">
+            <i class="fa fa-check"></i>
+            <span>GLB</span>
+          </label>
+          <label class="filter-option" data-type="video">
+            <i class="fa fa-check"></i>
+            <span>Video</span>
+          </label>
+          <label class="filter-option" data-type="audio">
+            <i class="fa fa-check"></i>
+            <span>Audio</span>
+          </label>
+          <label class="filter-option" data-type="image">
+            <i class="fa fa-check"></i>
+            <span>Images</span>
+          </label>
         </div>
       </div>
       <button id="darkModeToggle" class="btn" title="Toggle dark mode">
