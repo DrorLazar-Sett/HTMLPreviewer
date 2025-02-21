@@ -322,11 +322,38 @@
       background: #2a2a2a;
       text-align: center;
       padding: 12px;
-      transition: background 0.3s, transform 0.2s;
+      transition: background 0.3s, transform 0.2s, border-color 0.3s;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
       position: relative;
       min-height: 220px; /* Height for tile + name */
-      
+      cursor: pointer;
+    }
+
+    .model-tile.selected {
+      border-color: #9b77ff;
+      box-shadow: 0 0 0 2px #9b77ff;
+    }
+
+    .selection-indicator {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      border: 2px solid #666;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      transition: all 0.3s;
+    }
+
+    .model-tile.selected .selection-indicator {
+      background: #9b77ff;
+      border-color: #fff;
     }
     
     .placeholder {
@@ -645,6 +672,19 @@
     </div>
     <div class="controls-group">
       <div class="dropdown">
+        <button id="selectionDropdown" class="btn dropdown-btn">0 Selected <i class="fa fa-chevron-down"></i></button>
+        <div class="dropdown-content">
+          <label class="selection-option" onclick="downloadSelected()">
+            <i class="fa fa-download"></i>
+            <span>Download Selected</span>
+          </label>
+          <label class="selection-option" onclick="clearSelection()">
+            <i class="fa fa-times"></i>
+            <span>Clear Selection</span>
+          </label>
+        </div>
+      </div>
+      <div class="dropdown">
         <button class="btn dropdown-btn">Sort <i class="fa fa-chevron-down"></i></button>
         <div class="dropdown-content">
           <label data-value="name" class="sort-option active"><i class="fa fa-check"></i>Sort by Name</label>
@@ -713,6 +753,7 @@
     let filteredModelFiles = [];
     let loadSubfolders = false;  // flag for subfolder loading
     let currentSort = { field: 'name', direction: 'asc' };
+    let selectedFiles = new Set(); // Store selected file names
 
     // Format file size in a human-readable format
     function formatFileSize(bytes) {
@@ -962,9 +1003,24 @@
       pageItems.forEach(model => {
         // Create tile with placeholder
         const tile = document.createElement("div");
-        tile.className = "model-tile";
+        tile.className = "model-tile" + (selectedFiles.has(model.name) ? " selected" : "");
         tile.dataset.modelType = model.type;
         tile.dataset.modelName = model.name;
+
+        // Add selection indicator
+        const selectionIndicator = document.createElement('div');
+        selectionIndicator.className = 'selection-indicator';
+        selectionIndicator.innerHTML = '<i class="fa fa-check"></i>';
+        tile.appendChild(selectionIndicator);
+
+        // Add click handler for selection
+        tile.addEventListener('click', (e) => {
+          // Don't trigger selection when clicking fullscreen button or video controls
+          if (e.target.closest('.fullscreen-btn') || e.target.closest('.scrub-bar-container')) {
+            return;
+          }
+          toggleSelection(model.name);
+        });
         
         // Add fullscreen button if not audio
         if (model.type !== "audio") {
@@ -1487,6 +1543,48 @@
       viewerContainer.classList.remove('drag-over');
       await handleDrop(e);
     });
+
+    // Selection management functions
+    function toggleSelection(fileName) {
+      if (selectedFiles.has(fileName)) {
+        selectedFiles.delete(fileName);
+      } else {
+        selectedFiles.add(fileName);
+      }
+      updateSelectionCount();
+      renderPage(currentPage);
+    }
+
+    function updateSelectionCount() {
+      const count = selectedFiles.size;
+      document.getElementById('selectionDropdown').innerHTML = 
+        `${count} Selected <i class="fa fa-chevron-down"></i>`;
+    }
+
+    function clearSelection() {
+      selectedFiles.clear();
+      updateSelectionCount();
+      renderPage(currentPage);
+    }
+
+    async function downloadSelected() {
+      if (selectedFiles.size === 0) return;
+
+      for (const fileName of selectedFiles) {
+        const model = modelFiles.find(m => m.name === fileName);
+        if (model) {
+          const blob = new Blob([await model.file.arrayBuffer()]);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = model.name;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      }
+    }
 
     // Filter event setup - Initializes file type filter checkboxes and their change handlers
     const filterCheckboxes = document.querySelectorAll('.dropdown-content input[type="checkbox"]');
