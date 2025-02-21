@@ -129,12 +129,12 @@ body:not(.dark-mode) .folder-input {
   min-width: 48px;
 }
 
-#subfolderToggle .fa-folder {
+#subfolderToggle .fa-sitemap {
   color: #666;
   transition: color 0.3s;
 }
 
-#subfolderToggle .fa-folder.active {
+#subfolderToggle .fa-sitemap.active {
   color: #9b77ff;
 }
 

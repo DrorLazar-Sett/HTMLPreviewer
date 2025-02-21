@@ -13,6 +13,7 @@ const returnButton = document.getElementById('returnButton');
 const fullscreenVideo = document.getElementById('fullscreenVideo');
 const fullscreenViewer = document.getElementById('fullscreenViewer');
 const selectionDropdown = document.getElementById('selectionDropdown');
+const itemsPerPageBtn = document.getElementById('itemsPerPageBtn');
 
 // Private state
 let _currentPage = 0;
@@ -38,6 +39,7 @@ export const setCurrentPage = (page) => {
 
 export const setItemsPerPage = (items) => {
   _itemsPerPage = items;
+  itemsPerPageBtn.innerHTML = `${items} Items <i class="fa fa-chevron-down"></i>`;
   return _itemsPerPage;
 };
 
@@ -47,7 +49,7 @@ export const setLoadSubfolders = (value, depth = 'off') => {
   
   // Reconstruct button content
   subfolderToggle.innerHTML = `
-    <i class="fa fa-folder${depth === 'off' ? '' : ' active'}"></i>
+    <i class="fa fa-sitemap${depth === 'off' ? '' : ' active'}"></i>
     <span>${depth === 'off' ? '' : (depth === 'all' ? 'All' : depth)}</span>
     <i class="fa fa-chevron-down"></i>
   `;
@@ -65,6 +67,19 @@ document.querySelectorAll('.subfolder-option').forEach(option => {
   option.addEventListener('click', () => {
     const depth = option.dataset.depth;
     setLoadSubfolders(depth !== 'off', depth);
+    renderPage(getCurrentPage());
+  });
+});
+
+// Add event listeners for items per page options
+document.querySelectorAll('.items-option').forEach(option => {
+  option.addEventListener('click', () => {
+    const value = parseInt(option.dataset.value);
+    document.querySelectorAll('.items-option').forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.value === option.dataset.value);
+    });
+    setItemsPerPage(value);
+    setCurrentPage(0);
     renderPage(getCurrentPage());
   });
 });
@@ -188,7 +203,6 @@ sizeSlider.addEventListener("input", (e) => {
   document.documentElement.style.setProperty('--tile-size', `${size}px`);
   sizeValue.textContent = `${size}px`;
 });
-
 
 // Import currentFullscreenViewer from asset_loading.js
 import { currentFullscreenViewer } from './asset_loading.js';
