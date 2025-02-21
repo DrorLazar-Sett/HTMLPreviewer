@@ -28,7 +28,17 @@
       <button id="folderPicker" class="btn" title="Pick a folder">
         <i class="fa fa-folder-open"></i>
       </button>
-      <button id="subfolderToggle" class="btn" title="Toggle load subfolders">Subfolders: Off</button>
+      <div class="dropdown">
+        <button id="subfolderToggle" class="btn dropdown-btn" title="Set subfolder depth"><i class="fa fa-folder"></i><span></span><i class="fa fa-chevron-down"></i></button>
+        <div class="dropdown-content">
+          <label data-depth="off" class="subfolder-option active"><i class="fa fa-check"></i>Off</label>
+          <label data-depth="1" class="subfolder-option"><i class="fa fa-check"></i>1</label>
+          <label data-depth="2" class="subfolder-option"><i class="fa fa-check"></i>2</label>
+          <label data-depth="3" class="subfolder-option"><i class="fa fa-check"></i>3</label>
+          <label data-depth="4" class="subfolder-option"><i class="fa fa-check"></i>4</label>
+          <label data-depth="all" class="subfolder-option"><i class="fa fa-check"></i>All</label>
+        </div>
+      </div>
       <button id="prevPage" class="btn prevPage" disabled>
         <i class="fa fa-chevron-left"></i>
       </button>

@@ -4,6 +4,7 @@ import {
   getCurrentPage,
   getItemsPerPage,
   getLoadSubfolders,
+  getSubfolderDepth,
   getCurrentSort,
   getSelectedFiles,
   setCurrentPage,
@@ -82,13 +83,16 @@ function createPlaceholder(type) {
 const tileCache = new Map();
 
 // File retrieval function - Recursively collects files from selected directory
-async function getFilesFromDirectory(dirHandle, recursive) {
+async function getFilesFromDirectory(dirHandle, recursive, currentDepth = 0) {
   let files = [];
+  const depth = getSubfolderDepth();
+  const maxDepth = depth === 'all' ? Infinity : depth === 'off' ? 0 : parseInt(depth);
+
   for await (const [name, handle] of dirHandle.entries()) {
     if (handle.kind === "file") {
       files.push({ name, handle });
-    } else if (handle.kind === "directory" && recursive) {
-      const subFiles = await getFilesFromDirectory(handle, true);
+    } else if (handle.kind === "directory" && recursive && currentDepth < maxDepth) {
+      const subFiles = await getFilesFromDirectory(handle, true, currentDepth + 1);
       files = files.concat(subFiles);
     }
   }
@@ -158,8 +162,9 @@ async function handleFolderPick(dirHandle) {
   viewerContainer.innerHTML = "";
   try {
     let fileEntries = [];
-    if (getLoadSubfolders()) {
-      console.log("Loading files with subfolders");
+    const depth = getSubfolderDepth();
+    if (depth !== 'off') {
+      console.log(`Loading files with subfolder depth: ${depth}`);
       fileEntries = await getFilesFromDirectory(dirHandle, true);
     } else {
       console.log("Loading files from root directory only");

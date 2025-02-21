@@ -18,6 +18,7 @@ const selectionDropdown = document.getElementById('selectionDropdown');
 let _currentPage = 0;
 let _itemsPerPage = 20;
 let _loadSubfolders = false;
+let _subfolderDepth = 'off';
 let _currentSort = { field: 'name', direction: 'asc' };
 let _selectedFiles = new Set();
 
@@ -25,6 +26,7 @@ let _selectedFiles = new Set();
 export const getCurrentPage = () => _currentPage;
 export const getItemsPerPage = () => _itemsPerPage;
 export const getLoadSubfolders = () => _loadSubfolders;
+export const getSubfolderDepth = () => _subfolderDepth;
 export const getCurrentSort = () => ({ ..._currentSort });
 export const getSelectedFiles = () => new Set(_selectedFiles);
 
@@ -39,11 +41,33 @@ export const setItemsPerPage = (items) => {
   return _itemsPerPage;
 };
 
-export const setLoadSubfolders = (value) => {
+export const setLoadSubfolders = (value, depth = 'off') => {
   _loadSubfolders = value;
-  subfolderToggle.textContent = _loadSubfolders ? "Subfolders: On" : "Subfolders: Off";
+  _subfolderDepth = depth;
+  
+  // Reconstruct button content
+  subfolderToggle.innerHTML = `
+    <i class="fa fa-folder${depth === 'off' ? '' : ' active'}"></i>
+    <span>${depth === 'off' ? '' : (depth === 'all' ? 'All' : depth)}</span>
+    <i class="fa fa-chevron-down"></i>
+  `;
+  
+  // Update active state in dropdown
+  document.querySelectorAll('.subfolder-option').forEach(option => {
+    option.classList.toggle('active', option.dataset.depth === depth);
+  });
+  
   return _loadSubfolders;
 };
+
+// Add event listeners for subfolder options
+document.querySelectorAll('.subfolder-option').forEach(option => {
+  option.addEventListener('click', () => {
+    const depth = option.dataset.depth;
+    setLoadSubfolders(depth !== 'off', depth);
+    renderPage(getCurrentPage());
+  });
+});
 
 export const setCurrentSort = (sort) => {
   _currentSort = { ...sort };
@@ -165,10 +189,6 @@ sizeSlider.addEventListener("input", (e) => {
   sizeValue.textContent = `${size}px`;
 });
 
-// Subfolder toggle handler
-subfolderToggle.addEventListener("click", () => {
-  setLoadSubfolders(!_loadSubfolders);
-});
 
 // Import currentFullscreenViewer from asset_loading.js
 import { currentFullscreenViewer } from './asset_loading.js';

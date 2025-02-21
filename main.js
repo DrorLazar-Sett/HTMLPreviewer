@@ -25,15 +25,6 @@ AssetLoading.folderPathInput.addEventListener("keypress", async (event) => {
   }
 });
 
-// Subfolder toggle - trigger reload if needed (example, adjust logic as necessary)
-UI.subfolderToggle.addEventListener("click", async () => {
-  UI.loadSubfolders = !UI.loadSubfolders;
-  UI.subfolderToggle.textContent = UI.loadSubfolders ? "Subfolders: On" : "Subfolders: Off";
-  if (AssetLoading.lastDirectoryHandle) {
-    await AssetLoading.handleFolderPick(AssetLoading.lastDirectoryHandle); // Reload files from last directory
-  }
-});
-
 // Selection dropdown actions
 const selectionOptions = document.querySelectorAll('.selection-option');
 selectionOptions.forEach(option => {

@@ -125,6 +125,25 @@ body:not(.dark-mode) .folder-input {
   transition: background-color 0.3s;
 }
 
+#subfolderToggle {
+  min-width: 48px;
+}
+
+#subfolderToggle .fa-folder {
+  color: #666;
+  transition: color 0.3s;
+}
+
+#subfolderToggle .fa-folder.active {
+  color: #9b77ff;
+}
+
+#subfolderToggle span {
+  min-width: 16px;
+  margin: 0 2px;
+  color: #9b77ff;
+}
+
 .dropdown-content {
   display: none;
   position: absolute;
@@ -196,12 +215,14 @@ body:not(.dark-mode) .folder-input {
 
 /* Sort and items options styles */
 .dropdown-content .sort-option,
-.dropdown-content .items-option {
+.dropdown-content .items-option,
+.dropdown-content .subfolder-option {
   padding-left: 36px;
 }
 
 .dropdown-content .sort-option i,
-.dropdown-content .items-option i {
+.dropdown-content .items-option i,
+.dropdown-content .subfolder-option i {
   position: absolute;
   left: 12px;
   opacity: 0;
@@ -209,7 +230,8 @@ body:not(.dark-mode) .folder-input {
 }
 
 .dropdown-content .sort-option.active i,
-.dropdown-content .items-option.active i {
+.dropdown-content .items-option.active i,
+.dropdown-content .subfolder-option.active i {
   opacity: 1;
   color: #9b77ff;
 }
