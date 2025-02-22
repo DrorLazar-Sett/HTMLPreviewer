@@ -38,19 +38,29 @@ export const setCurrentPage = (page) => {
 };
 
 function updateItemsDropdownState(items) {
-  const itemsDropdown = itemsPerPageBtn.nextElementSibling;
+  const itemsDropdown = document.getElementById('itemsDropdown');
+  if (!itemsDropdown) return;
+  
   itemsDropdown.querySelectorAll('.items-option').forEach(option => {
-    const isActive = parseInt(option.dataset.value) === items;
-    option.querySelector('.items-check').style.visibility = isActive ? 'visible' : 'hidden';
+    const checkmark = option.querySelector('.items-check');
+    if (checkmark) {
+      const isActive = parseInt(option.dataset.value) === items;
+      checkmark.style.visibility = isActive ? 'visible' : 'hidden';
+    }
   });
 }
 
 export const setItemsPerPage = (items) => {
   _itemsPerPage = items;
+  
   // Clear existing content
-  itemsPerPageBtn.textContent = '';
+  while (itemsPerPageBtn.firstChild) {
+    itemsPerPageBtn.removeChild(itemsPerPageBtn.firstChild);
+  }
+  
   // Add text node
   itemsPerPageBtn.appendChild(document.createTextNode(`${items} Items `));
+  
   // Add icon
   const icon = document.createElement('i');
   icon.className = 'fa fa-chevron-down';
@@ -63,10 +73,15 @@ export const setItemsPerPage = (items) => {
 };
 
 function updateSubfoldersDropdownState(depth) {
-  const subfolderDropdown = subfolderToggle.nextElementSibling;
+  const subfolderDropdown = document.getElementById('subfolderDropdown');
+  if (!subfolderDropdown) return;
+  
   subfolderDropdown.querySelectorAll('.subfolder-option').forEach(option => {
-    const isActive = option.dataset.depth === depth;
-    option.querySelector('.subfolder-check').style.visibility = isActive ? 'visible' : 'hidden';
+    const checkmark = option.querySelector('.subfolder-check');
+    if (checkmark) {
+      const isActive = option.dataset.depth === depth;
+      checkmark.style.visibility = isActive ? 'visible' : 'hidden';
+    }
   });
 }
 
@@ -75,7 +90,9 @@ export const setLoadSubfolders = (value, depth = 'off') => {
   _subfolderDepth = depth;
   
   // Clear existing content
-  subfolderToggle.textContent = '';
+  while (subfolderToggle.firstChild) {
+    subfolderToggle.removeChild(subfolderToggle.firstChild);
+  }
   
   // Add sitemap icon
   const sitemapIcon = document.createElement('i');
@@ -98,21 +115,54 @@ export const setLoadSubfolders = (value, depth = 'off') => {
   return _loadSubfolders;
 };
 
+// Function to close all dropdowns
+function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown').forEach(dropdown => {
+    dropdown.classList.remove('active');
+  });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.dropdown')) {
+    closeAllDropdowns();
+  }
+});
+
+// Add click handlers for dropdown buttons
+document.querySelectorAll('.dropdown-btn').forEach(button => {
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const dropdown = button.closest('.dropdown');
+    const wasActive = dropdown.classList.contains('active');
+    
+    closeAllDropdowns();
+    
+    if (!wasActive) {
+      dropdown.classList.add('active');
+    }
+  });
+});
+
 // Add event listeners for subfolder options
 document.querySelectorAll('.subfolder-option').forEach(option => {
-  option.addEventListener('click', () => {
+  option.addEventListener('click', (event) => {
+    event.stopPropagation();
     const depth = option.dataset.depth;
     setLoadSubfolders(depth !== 'off', depth);
+    closeAllDropdowns();
     renderPage(getCurrentPage());
   });
 });
 
 // Add event listeners for items per page options
 document.querySelectorAll('.items-option').forEach(option => {
-  option.addEventListener('click', () => {
+  option.addEventListener('click', (event) => {
+    event.stopPropagation();
     const value = parseInt(option.dataset.value);
     setItemsPerPage(value);
     setCurrentPage(0);
+    closeAllDropdowns();
     renderPage(getCurrentPage());
   });
 });
