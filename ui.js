@@ -122,23 +122,38 @@ function closeAllDropdowns() {
   });
 }
 
-// Close dropdowns when clicking outside
-document.addEventListener('click', (event) => {
-  if (!event.target.closest('.dropdown')) {
-    closeAllDropdowns();
-  }
-});
-
-// Add click handlers for dropdown buttons
+// Prevent click events on dropdown buttons
 document.querySelectorAll('.dropdown-btn').forEach(button => {
   button.addEventListener('click', (event) => {
+    event.preventDefault();
     event.stopPropagation();
-    const dropdown = button.closest('.dropdown');
-    const wasActive = dropdown.classList.contains('active');
-    
+  });
+});
+
+// Add hover handlers for dropdowns
+document.querySelectorAll('.dropdown').forEach(dropdown => {
+  let closeTimeout;
+  
+  dropdown.addEventListener('mouseenter', () => {
+    if (closeTimeout) {
+      clearTimeout(closeTimeout);
+    }
     closeAllDropdowns();
-    
-    if (!wasActive) {
+    dropdown.classList.add('active');
+  });
+  
+  dropdown.addEventListener('mouseleave', () => {
+    closeTimeout = setTimeout(() => {
+      dropdown.classList.remove('active');
+    }, 150); // Small delay to improve usability when moving to submenu
+  });
+});
+
+// Keep dropdown open when hovering over content
+document.querySelectorAll('.dropdown-content').forEach(content => {
+  content.addEventListener('mouseenter', () => {
+    const dropdown = content.closest('.dropdown');
+    if (dropdown) {
       dropdown.classList.add('active');
     }
   });
