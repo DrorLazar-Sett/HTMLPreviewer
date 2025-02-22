@@ -220,18 +220,31 @@ body:not(.dark-mode) .folder-input {
   padding-left: 36px;
 }
 
-.dropdown-content .sort-option i,
-.dropdown-content .items-option i,
-.dropdown-content .subfolder-option i {
+/* Items per page dropdown specific styles */
+.dropdown-content .items-check {
+  position: absolute;
+  left: 12px;
+  visibility: hidden;
+  color: #9b77ff;
+}
+
+/* Subfolder dropdown specific styles */
+.dropdown-content .subfolder-check {
+  position: absolute;
+  left: 12px;
+  visibility: hidden;
+  color: #9b77ff;
+}
+
+/* Sort dropdown specific styles */
+.dropdown-content .sort-option i {
   position: absolute;
   left: 12px;
   opacity: 0;
   transition: opacity 0.3s;
 }
 
-.dropdown-content .sort-option.active i,
-.dropdown-content .items-option.active i,
-.dropdown-content .subfolder-option.active i {
+.dropdown-content .sort-option[data-active="true"] i {
   opacity: 1;
   color: #9b77ff;
 }

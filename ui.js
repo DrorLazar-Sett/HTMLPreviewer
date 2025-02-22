@@ -37,27 +37,63 @@ export const setCurrentPage = (page) => {
   return _currentPage;
 };
 
+function updateItemsDropdownState(items) {
+  const itemsDropdown = itemsPerPageBtn.nextElementSibling;
+  itemsDropdown.querySelectorAll('.items-option').forEach(option => {
+    const isActive = parseInt(option.dataset.value) === items;
+    option.querySelector('.items-check').style.visibility = isActive ? 'visible' : 'hidden';
+  });
+}
+
 export const setItemsPerPage = (items) => {
   _itemsPerPage = items;
-  itemsPerPageBtn.innerHTML = `${items} Items <i class="fa fa-chevron-down"></i>`;
+  // Clear existing content
+  itemsPerPageBtn.textContent = '';
+  // Add text node
+  itemsPerPageBtn.appendChild(document.createTextNode(`${items} Items `));
+  // Add icon
+  const icon = document.createElement('i');
+  icon.className = 'fa fa-chevron-down';
+  itemsPerPageBtn.appendChild(icon);
+  
+  // Update only items dropdown state
+  updateItemsDropdownState(items);
+  
   return _itemsPerPage;
 };
+
+function updateSubfoldersDropdownState(depth) {
+  const subfolderDropdown = subfolderToggle.nextElementSibling;
+  subfolderDropdown.querySelectorAll('.subfolder-option').forEach(option => {
+    const isActive = option.dataset.depth === depth;
+    option.querySelector('.subfolder-check').style.visibility = isActive ? 'visible' : 'hidden';
+  });
+}
 
 export const setLoadSubfolders = (value, depth = 'off') => {
   _loadSubfolders = value;
   _subfolderDepth = depth;
   
-  // Reconstruct button content
-  subfolderToggle.innerHTML = `
-    <i class="fa fa-sitemap${depth === 'off' ? '' : ' active'}"></i>
-    <span>${depth === 'off' ? '' : (depth === 'all' ? 'All' : depth)}</span>
-    <i class="fa fa-chevron-down"></i>
-  `;
+  // Clear existing content
+  subfolderToggle.textContent = '';
   
-  // Update active state in dropdown
-  document.querySelectorAll('.subfolder-option').forEach(option => {
-    option.classList.toggle('active', option.dataset.depth === depth);
-  });
+  // Add sitemap icon
+  const sitemapIcon = document.createElement('i');
+  sitemapIcon.className = `fa fa-sitemap${depth === 'off' ? '' : ' active'}`;
+  subfolderToggle.appendChild(sitemapIcon);
+  
+  // Add text span
+  const textSpan = document.createElement('span');
+  textSpan.textContent = depth === 'off' ? '' : (depth === 'all' ? 'All' : depth);
+  subfolderToggle.appendChild(textSpan);
+  
+  // Add chevron icon
+  const chevronIcon = document.createElement('i');
+  chevronIcon.className = 'fa fa-chevron-down';
+  subfolderToggle.appendChild(chevronIcon);
+  
+  // Update only subfolders dropdown state
+  updateSubfoldersDropdownState(depth);
   
   return _loadSubfolders;
 };
@@ -75,9 +111,6 @@ document.querySelectorAll('.subfolder-option').forEach(option => {
 document.querySelectorAll('.items-option').forEach(option => {
   option.addEventListener('click', () => {
     const value = parseInt(option.dataset.value);
-    document.querySelectorAll('.items-option').forEach(opt => {
-      opt.classList.toggle('active', opt.dataset.value === option.dataset.value);
-    });
     setItemsPerPage(value);
     setCurrentPage(0);
     renderPage(getCurrentPage());
