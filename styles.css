@@ -58,7 +58,7 @@ body {
 
 .controls-group {
   display: flex;
-  align-items: center;
+  align-items: right;
   gap: 20px;
   justify-content: flex-end;
   flex-wrap: wrap;
@@ -80,15 +80,23 @@ body {
 
 .fileControls {
   display: flex;
-  align-items: center;
+  align-items: left;
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
-  flex: 1;
+  //flex: 1;
+}
+
+.pageControls {
+  display: flex;
+  align-items: center; 
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 768px) {
-  .fileControls {
+  .fileControls, .pageControls {
     width: 100%;
     gap: 8px;
   }
