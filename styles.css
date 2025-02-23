@@ -914,6 +914,68 @@ body.dark-mode .audio-controls audio::-webkit-media-controls-panel {
   pointer-events: none;
 }
 
+/* Navigation areas for fullscreen view */
+.fullscreen-nav {
+  position: fixed;
+  top: 0;
+  width: 100px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  opacity: 0;
+  transition: opacity 0.3s;
+  cursor: pointer;
+  z-index: 1001;
+  pointer-events: auto;
+}
+
+.fullscreen-nav:hover {
+  opacity: 1;
+}
+
+.fullscreen-nav i {
+  font-size: 24px;
+}
+
+#prevNav {
+  left: 0;
+}
+
+#nextNav {
+  right: 0;
+}
+
+/* Tooltip styles */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]:before {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 1002;
+}
+
+[data-tooltip]:hover:before {
+  opacity: 1;
+  visibility: visible;
+}
+
 #fullscreenViewer, #fullscreenVideo {
   pointer-events: auto;
 }

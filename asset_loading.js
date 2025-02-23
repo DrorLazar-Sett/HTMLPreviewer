@@ -441,7 +441,7 @@ async function showFullscreen(model) {
     mv.style.height = "100%";
     fullscreenViewer.appendChild(mv);
     fullscreenViewer.style.display = 'block';
-    currentFullscreenViewer = mv;
+    currentFullscreenViewer = { ...mv, fileName: model.name };
     
   } else if (model.type === "fbx") {
     const container = document.createElement('div');
@@ -458,7 +458,8 @@ async function showFullscreen(model) {
     currentFullscreenViewer = {
       cleanup: () => {
         activeFbxViewers.delete(viewer);
-      }
+      },
+      fileName: model.name
     };
     
   } else if (model.type === "video") {
@@ -470,7 +471,8 @@ async function showFullscreen(model) {
     const previewVideo = viewerContainer.querySelector(`[data-model-name="${model.name}"] video`);
     currentFullscreenViewer = {
       type: 'video',
-      previewVideo: previewVideo
+      previewVideo: previewVideo,
+      fileName: model.name
     };
     
   } else if (model.type === "image") {
@@ -483,7 +485,7 @@ async function showFullscreen(model) {
     img.style.objectFit = "contain";
     fullscreenViewer.innerHTML = "";
     fullscreenViewer.appendChild(img);
-    currentFullscreenViewer = img;
+    currentFullscreenViewer = { ...img, fileName: model.name };
   }
 }
 

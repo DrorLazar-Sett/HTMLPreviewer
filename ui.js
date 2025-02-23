@@ -1,5 +1,5 @@
 // ui.js
-import { renderPage, sortFiles, activeFbxViewers, modelFiles, updateFilteredModelFiles } from './asset_loading.js';
+import { renderPage, sortFiles, activeFbxViewers, modelFiles, filteredModelFiles, updateFilteredModelFiles, showFullscreen } from './asset_loading.js';
 import { currentFullscreenViewer } from './asset_loading.js';
 
 // Private state
@@ -236,9 +236,53 @@ export function initializeUI() {
           exitFullscreen(currentFullscreenViewer);
         });
 
+        // Global keyboard shortcuts
         document.addEventListener('keydown', function(event) {
-          if (fullscreenOverlay.style.display === 'block' && event.key === 'Escape') {
-            exitFullscreen(currentFullscreenViewer);
+          // Grid view shortcuts
+          if (fullscreenOverlay.style.display !== 'block') {
+            if (event.ctrlKey && event.key === 'f') {
+              event.preventDefault();
+              searchInput.focus();
+            } else if (event.key === 'PageUp') {
+              event.preventDefault();
+              if (!prevPageBtn.disabled) {
+                setCurrentPage(getCurrentPage() - 1);
+                renderPage(getCurrentPage());
+              }
+            } else if (event.key === 'PageDown') {
+              event.preventDefault();
+              if (!nextPageBtn.disabled) {
+                setCurrentPage(getCurrentPage() + 1);
+                renderPage(getCurrentPage());
+              }
+            } else if (event.key === 'ArrowLeft') {
+              if (!prevPageBtn.disabled) {
+                setCurrentPage(getCurrentPage() - 1);
+                renderPage(getCurrentPage());
+              }
+            } else if (event.key === 'ArrowRight') {
+              if (!nextPageBtn.disabled) {
+                setCurrentPage(getCurrentPage() + 1);
+                renderPage(getCurrentPage());
+              }
+            }
+          }
+          // Fullscreen view shortcuts
+          else {
+            if (event.key === 'Escape') {
+              exitFullscreen(currentFullscreenViewer);
+            } else if (event.key === 'ArrowLeft') {
+              navigateFullscreen('prev');
+            } else if (event.key === 'ArrowRight') {
+              navigateFullscreen('next');
+            } else if (event.key === ' ' && currentFullscreenViewer?.type === 'video') {
+              event.preventDefault();
+              if (fullscreenVideo.paused) {
+                fullscreenVideo.play();
+              } else {
+                fullscreenVideo.pause();
+              }
+            }
           }
         });
 
@@ -247,6 +291,18 @@ export function initializeUI() {
             exitFullscreen(currentFullscreenViewer);
           }
         });
+
+        // Fullscreen navigation areas
+        const prevNav = document.getElementById('prevNav');
+        const nextNav = document.getElementById('nextNav');
+        
+        if (prevNav) {
+          prevNav.addEventListener('click', () => navigateFullscreen('prev'));
+        }
+        
+        if (nextNav) {
+          nextNav.addEventListener('click', () => navigateFullscreen('next'));
+        }
       }
 
       resolve(window.uiElements);
@@ -433,7 +489,7 @@ export function exitFullscreen(currentFullscreenViewer) {
   const { fullscreenOverlay, fullscreenVideo } = window.uiElements;
   fullscreenOverlay.style.display = 'none';
   if (currentFullscreenViewer) {
-    if (currentFullscreenViewer === fullscreenVideo || currentFullscreenViewer.type === 'video') {
+    if (currentFullscreenViewer.type === 'video') {
       // Stop both fullscreen video and any preview video
       fullscreenVideo.pause();
       fullscreenVideo.currentTime = 0;
@@ -545,5 +601,19 @@ function handleSortDropdownToggle(event) {
       closeAllDropdowns();
       dropdown.classList.add('active');
     }
+  }
+}
+
+// Function to navigate in fullscreen mode
+function navigateFullscreen(direction) {
+  const currentIndex = filteredModelFiles.findIndex(file => file.name === currentFullscreenViewer?.fileName);
+  if (currentIndex === -1) return;
+
+  const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+  if (newIndex >= 0 && newIndex < filteredModelFiles.length) {
+    const nextFile = filteredModelFiles[newIndex];
+    const currentViewer = currentFullscreenViewer;
+    exitFullscreen(currentFullscreenViewer);
+    showFullscreen(nextFile);
   }
 }

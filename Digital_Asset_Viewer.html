@@ -33,7 +33,7 @@
     <div class="searchControls">
       <div class="search-wrapper">
         <i class="fa fa-search search-icon"></i>
-        <input type="text" id="searchInput" class="search-input" placeholder="Search by name, type, or path">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by name, type, or path" data-tooltip="Press Ctrl+F to focus">
         <button class="search-clear" title="Clear search"><i class="fa fa-times"></i></button>
       </div>
     </div>
@@ -54,11 +54,11 @@
       </div>
     </div>
     <div class="pageControls">
-      <button id="prevPage" class="btn prevPage" disabled>
+      <button id="prevPage" class="btn prevPage" disabled data-tooltip="Previous Page (Left Arrow)">
         <i class="fa fa-chevron-left"></i>
       </button>
       <span id="pageInfo" class="pageInfo">Page 0 of 0</span>
-      <button id="nextPage" class="btn nextPage" disabled>
+      <button id="nextPage" class="btn nextPage" disabled data-tooltip="Next Page (Right Arrow)">
         <i class="fa fa-chevron-right"></i>
       </button>
       <div class="dropdown">
@@ -141,8 +141,14 @@
       <i class="fa fa-arrow-left"></i>
     </button>
     <div id="fullscreenContent">
+      <div id="prevNav" class="fullscreen-nav" data-tooltip="Previous (Left Arrow)">
+        <i class="fa fa-chevron-left"></i>
+      </div>
       <div id="fullscreenViewer"></div>
-      <video id="fullscreenVideo" controls style="display:none;"></video>
+      <video id="fullscreenVideo" controls style="display:none;" data-tooltip="Space to Play/Pause"></video>
+      <div id="nextNav" class="fullscreen-nav" data-tooltip="Next (Right Arrow)">
+        <i class="fa fa-chevron-right"></i>
+      </div>
     </div>
   </div>
 
