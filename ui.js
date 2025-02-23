@@ -212,8 +212,9 @@ export const setCurrentSort = (sort) => {
     directionIcon.className = _currentSort.direction === 'asc' ? 'fa fa-sort-down' : 'fa fa-sort-up';
     sortBtn.appendChild(directionIcon);
     
-    // Add text showing field
-    sortBtn.appendChild(document.createTextNode(` Sort by ${_currentSort.field} `));
+    // Add text showing field with capitalized first letter
+    const capitalizedField = _currentSort.field.charAt(0).toUpperCase() + _currentSort.field.slice(1);
+    sortBtn.appendChild(document.createTextNode(` ${capitalizedField} `));
     
     // Add dropdown icon
     const dropdownIcon = document.createElement('i');
