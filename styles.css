@@ -84,7 +84,6 @@ body {
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
-  //flex: 1;
 }
 
 .pageControls {
@@ -358,12 +357,102 @@ body:not(.dark-mode) .folder-input {
   margin: 8px 0;
 }
 
+.sort-direction-wrapper {
+  width: 100%;
+}
+
 .dropdown-content .sort-direction {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 8px 16px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
+  transition: all 0.3s;
+  outline: none;
+  margin: 0;
+  position: relative;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.dropdown-content .sort-direction:hover {
+  background-color: #444;
+}
+
+.dropdown-content .sort-direction:active {
+  background-color: #555;
+}
+
+.dropdown-content .sort-direction i {
+  width: 16px;
+  text-align: center;
+  transition: transform 0.3s;
+  pointer-events: none;
+}
+
+.dropdown-content .sort-direction span {
+  flex: 1;
+  pointer-events: none;
+}
+
+.dropdown-content .sort-direction-hit-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  cursor: pointer;
+}
+
+body:not(.dark-mode) .dropdown-content .sort-direction {
+  color: #333;
+}
+
+body:not(.dark-mode) .dropdown-content .sort-direction:hover {
+  background-color: #f0f0f0;
+}
+
+body:not(.dark-mode) .dropdown-content .sort-direction:active {
+  background-color: #e0e0e0;
+}
+
+.dropdown-content .sort-direction[data-direction="desc"] i {
+  transform: rotate(180deg);
+}
+
+.dropdown-content .sort-direction * {
+  pointer-events: none;
+}
+
+.dropdown-content .sort-direction-hit-area {
+  pointer-events: auto;
+}
+
+.dropdown-content .sort-direction:focus {
+  outline: none;
+  background-color: #555;
+}
+
+body:not(.dark-mode) .dropdown-content .sort-direction:focus {
+  background-color: #e0e0e0;
+}
+
+.dropdown-content .sort-direction:focus {
+  outline: none;
+  background-color: #555;
+}
+
+body:not(.dark-mode) .dropdown-content .sort-direction:focus {
+  background-color: #e0e0e0;
 }
 
 .dropdown-content .sort-direction i {

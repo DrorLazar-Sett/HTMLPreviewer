@@ -1,5 +1,5 @@
 // ui.js
-import { renderPage } from './asset_loading.js';
+import { renderPage, sortFiles } from './asset_loading.js';
 
 const darkModeToggle = document.getElementById("darkModeToggle");
 const subfolderToggle = document.getElementById("subfolderToggle");
@@ -182,10 +182,108 @@ document.querySelectorAll('.items-option').forEach(option => {
   });
 });
 
+function updateSortDropdownState(field, direction) {
+  const sortDropdown = document.getElementById('sortDropdown');
+  if (!sortDropdown) return;
+  
+  // Update sort options
+  sortDropdown.querySelectorAll('.sort-option').forEach(option => {
+    const checkmark = option.querySelector('.fa-check');
+    if (checkmark) {
+      const isActive = option.dataset.value === field;
+      checkmark.style.visibility = isActive ? 'visible' : 'hidden';
+    }
+  });
+  
+  // Update direction button
+  const directionBtn = sortDropdown.querySelector('.sort-direction');
+  if (directionBtn) {
+    directionBtn.dataset.direction = direction;
+    const icon = directionBtn.querySelector('i');
+    const text = directionBtn.querySelector('span');
+    if (icon && text) {
+      icon.className = direction === 'asc' ? 'fa fa-sort-up' : 'fa fa-sort-down';
+      text.textContent = `Sort ${direction === 'asc' ? 'Ascending' : 'Descending'}`;
+    }
+  }
+}
+
 export const setCurrentSort = (sort) => {
   _currentSort = { ...sort };
+  
+  // Update sort button text and icon
+  const sortBtn = document.getElementById('sortBtn');
+  if (sortBtn) {
+    // Clear existing content
+    while (sortBtn.firstChild) {
+      sortBtn.removeChild(sortBtn.firstChild);
+    }
+    
+    // Add text showing field and direction
+    const directionIcon = document.createElement('i');
+    directionIcon.className = _currentSort.direction === 'asc' ? 'fa fa-sort-up' : 'fa fa-sort-down';
+    sortBtn.appendChild(directionIcon);
+    
+    // Add text showing field
+    sortBtn.appendChild(document.createTextNode(` Sort by ${_currentSort.field} `));
+    
+    // Add dropdown icon
+    const dropdownIcon = document.createElement('i');
+    dropdownIcon.className = 'fa fa-chevron-down';
+    sortBtn.appendChild(dropdownIcon);
+
+    // Update button title
+    sortBtn.title = `Sort by ${_currentSort.field} (${_currentSort.direction === 'asc' ? 'ascending' : 'descending'})`;
+
+    // Update sort direction button
+    const sortDirectionBtn = document.getElementById('sortDirection');
+    if (sortDirectionBtn) {
+      sortDirectionBtn.dataset.direction = _currentSort.direction;
+      const icon = sortDirectionBtn.querySelector('i');
+      const text = sortDirectionBtn.querySelector('span');
+      if (icon && text) {
+        icon.className = _currentSort.direction === 'asc' ? 'fa fa-sort-up' : 'fa fa-sort-down';
+        text.textContent = `Sort ${_currentSort.direction === 'asc' ? 'Ascending' : 'Descending'}`;
+      }
+    }
+  }
+  
+  // Update dropdown state
+  updateSortDropdownState(_currentSort.field, _currentSort.direction);
+  
   return _currentSort;
 };
+
+// Add event listeners for sort options
+document.querySelectorAll('.sort-option').forEach(option => {
+  option.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const field = option.dataset.value;
+    setCurrentSort({ field, direction: _currentSort.direction });
+    
+    // Call sortFiles directly
+    sortFiles();
+    closeAllDropdowns();
+  });
+});
+
+// Initialize sort direction button
+document.addEventListener('click', (event) => {
+  if (event.target.closest('#sortDirection')) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const newDirection = _currentSort.direction === 'asc' ? 'desc' : 'asc';
+    _currentSort = { ..._currentSort, direction: newDirection };
+    
+    // Update the sort state
+    setCurrentSort({ ..._currentSort, direction: newDirection });
+    
+    // Call sortFiles directly
+    sortFiles();
+    closeAllDropdowns();
+  }
+}, true);
 
 // Function to update pagination display
 export function updatePagination(totalPages) {
@@ -291,9 +389,10 @@ darkModeToggle.addEventListener("click", () => {
   document.body.classList.toggle("dark-mode");
 });
 
-// Initialize tile size
+// Initialize UI states
 document.documentElement.style.setProperty('--tile-size', `${sizeSlider.value}px`);
 sizeValue.textContent = `${sizeSlider.value}px`;
+setCurrentSort(_currentSort); // Initialize sort button state
 
 // Size slider handler
 sizeSlider.addEventListener("input", (e) => {

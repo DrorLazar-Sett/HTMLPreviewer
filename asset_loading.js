@@ -698,17 +698,7 @@ sortOptions.forEach(option => {
   });
 });
 
-sortDirectionBtn.addEventListener('click', () => {
-  const currentSort = getCurrentSort();
-  const newDirection = currentSort.direction === 'asc' ? 'desc' : 'asc';
-  setCurrentSort({ ...currentSort, direction: newDirection });
-  sortDirectionBtn.classList.toggle('desc', newDirection === 'desc');
-  sortDirectionBtn.querySelector('span').textContent = newDirection === 'asc' ? 'Ascending' : 'Descending';
-  sortFiles();
-  setCurrentPage(0);
-  updatePagination(Math.ceil(filteredModelFiles.length / getItemsPerPage()));
-  renderPage(getCurrentPage());
-});
+// Sort direction is now handled in ui.js
 
 prevPageBtn.addEventListener("click", () => {
   const currentPage = getCurrentPage();

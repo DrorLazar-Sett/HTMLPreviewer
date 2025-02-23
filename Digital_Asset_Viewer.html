@@ -81,17 +81,18 @@
         </div>
       </div>
       <div class="dropdown">
-        <button class="btn dropdown-btn">Sort <i class="fa fa-chevron-down"></i></button>
-        <div class="dropdown-content">
+        <button id="sortBtn" class="btn dropdown-btn">Sort <i class="fa fa-chevron-down"></i></button>
+        <div id="sortDropdown" class="dropdown-content">
           <label data-value="name" class="sort-option" data-active="true"><i class="fa fa-check"></i>Sort by Name</label>
           <label data-value="size" class="sort-option"><i class="fa fa-check"></i>Sort by Size</label>
           <label data-value="type" class="sort-option"><i class="fa fa-check"></i>Sort by Type</label>
           <label data-value="date" class="sort-option"><i class="fa fa-check"></i>Sort by Date</label>
           <div class="dropdown-divider"></div>
-          <label class="sort-direction">
+          <button id="sortDirection" class="sort-direction" data-direction="asc" title="Toggle sort direction">
             <i class="fa fa-sort-up"></i>
-            <span>Ascending</span>
-          </label>
+            <span>Sort Ascending</span>
+            <div class="sort-direction-hit-area"></div>
+          </button>
         </div>
       </div>
       <div class="dropdown">
