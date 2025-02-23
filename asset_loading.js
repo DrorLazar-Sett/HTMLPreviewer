@@ -340,6 +340,14 @@ async function loadTileContent(tile) {
       audioControls.appendChild(audioElem);
       audioTile.appendChild(audioHeader);
       audioTile.appendChild(audioControls);
+
+      // Add fullscreen button
+      const fsBtn = document.createElement('button');
+      fsBtn.className = 'fullscreen-btn';
+      fsBtn.innerHTML = '<i class="fa fa-expand"></i>';
+      fsBtn.onclick = () => showFullscreen(model);
+      audioTile.appendChild(fsBtn);
+
       placeholder.replaceWith(audioTile);
 
     } else if (model.type === "image") {
@@ -382,13 +390,11 @@ function renderPage(pageIndex) {
       }
     });
 
-    if (model.type !== "audio") {
-      const fsBtn = document.createElement('button');
-      fsBtn.className = 'fullscreen-btn';
-      fsBtn.innerHTML = '<i class="fa fa-expand"></i>';
-      fsBtn.onclick = () => showFullscreen(model);
-      tile.appendChild(fsBtn);
-    }
+    const fsBtn = document.createElement('button');
+    fsBtn.className = 'fullscreen-btn';
+    fsBtn.innerHTML = '<i class="fa fa-expand"></i>';
+    fsBtn.onclick = () => showFullscreen(model);
+    tile.appendChild(fsBtn);
 
     tile.appendChild(createPlaceholder(model.type));
     tile.model = model;
@@ -487,6 +493,41 @@ async function showFullscreen(model) {
     fullscreenViewer.innerHTML = "";
     fullscreenViewer.appendChild(img);
     currentFullscreenViewer = { ...img, fileName: model.name };
+  } else if (model.type === "audio") {
+    fullscreenViewer.style.display = 'block';
+    fullscreenVideo.style.display = 'none';
+    
+    const audioContainer = document.createElement("div");
+    audioContainer.className = "fullscreen-audio";
+    
+    const audioHeader = document.createElement("div");
+    audioHeader.className = "fullscreen-audio-header";
+    const ext = model.name.split('.').pop().toUpperCase();
+    audioHeader.innerHTML = '<i class="fa fa-music"></i> ' + ext;
+    
+    const audioControls = document.createElement("div");
+    audioControls.className = "fullscreen-audio-controls";
+    const audioElem = document.createElement("audio");
+    audioElem.src = URL.createObjectURL(model.file);
+    audioElem.controls = true;
+    audioElem.style.width = "100%";
+    
+    audioControls.appendChild(audioElem);
+    audioContainer.appendChild(audioHeader);
+    audioContainer.appendChild(audioControls);
+    
+    fullscreenViewer.innerHTML = "";
+    fullscreenViewer.appendChild(audioContainer);
+    
+    currentFullscreenViewer = {
+      type: 'audio',
+      element: audioElem,
+      fileName: model.name,
+      cleanup: () => {
+        audioElem.pause();
+        audioElem.currentTime = 0;
+      }
+    };
   }
 }
 

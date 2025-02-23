@@ -1007,6 +1007,51 @@ body.dark-mode .audio-controls audio::-webkit-media-controls-panel {
   margin: auto;
 }
 
+.fullscreen-audio {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(42, 42, 42, 0.9);
+  border-radius: 8px;
+}
+
+.fullscreen-audio-header {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.fullscreen-audio-controls {
+  width: 100%;
+  max-width: 800px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.fullscreen-audio-controls audio {
+  width: 100%;
+}
+
+body:not(.dark-mode) .fullscreen-audio {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+body:not(.dark-mode) .fullscreen-audio-header {
+  color: #333;
+}
+
+body:not(.dark-mode) .fullscreen-audio-controls {
+  background: rgba(0, 0, 0, 0.1);
+}
+
 @media (max-width: 768px) {
   #fullscreenViewer {
     width: 90%;
