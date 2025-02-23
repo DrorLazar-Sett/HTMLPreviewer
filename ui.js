@@ -611,7 +611,17 @@ function navigateFullscreen(direction) {
   const currentIndex = filteredModelFiles.findIndex(file => file.name === currentFullscreenViewer?.fileName);
   if (currentIndex === -1) return;
 
-  const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+  const currentType = currentFullscreenViewer?.type || filteredModelFiles[currentIndex].type;
+  let newIndex = currentIndex;
+
+  do {
+    newIndex = direction === 'prev' ? newIndex - 1 : newIndex + 1;
+  } while (
+    newIndex >= 0 && 
+    newIndex < filteredModelFiles.length && 
+    filteredModelFiles[newIndex].type !== currentType
+  );
+
   if (newIndex >= 0 && newIndex < filteredModelFiles.length) {
     const nextFile = filteredModelFiles[newIndex];
     const currentViewer = currentFullscreenViewer;
