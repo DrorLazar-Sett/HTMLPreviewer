@@ -14,6 +14,7 @@ const fullscreenVideo = document.getElementById('fullscreenVideo');
 const fullscreenViewer = document.getElementById('fullscreenViewer');
 const selectionDropdown = document.getElementById('selectionDropdown');
 const itemsPerPageBtn = document.getElementById('itemsPerPageBtn');
+const sortBtn = document.getElementById('sortBtn');
 
 // Private state
 let _currentPage = 0;
@@ -122,8 +123,8 @@ function closeAllDropdowns() {
   });
 }
 
-// Prevent click events on dropdown buttons
-document.querySelectorAll('.dropdown-btn').forEach(button => {
+// Prevent click events on dropdown buttons (except sort button)
+document.querySelectorAll('.dropdown-btn:not(#sortBtn)').forEach(button => {
   button.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -182,7 +183,7 @@ document.querySelectorAll('.items-option').forEach(option => {
   });
 });
 
-function updateSortDropdownState(field, direction) {
+function updateSortDropdownState(field) {
   const sortDropdown = document.getElementById('sortDropdown');
   if (!sortDropdown) return;
   
@@ -194,25 +195,12 @@ function updateSortDropdownState(field, direction) {
       checkmark.style.visibility = isActive ? 'visible' : 'hidden';
     }
   });
-  
-  // Update direction button
-  const directionBtn = sortDropdown.querySelector('.sort-direction');
-  if (directionBtn) {
-    directionBtn.dataset.direction = direction;
-    const icon = directionBtn.querySelector('i');
-    const text = directionBtn.querySelector('span');
-    if (icon && text) {
-      icon.className = direction === 'asc' ? 'fa fa-sort-up' : 'fa fa-sort-down';
-      text.textContent = `Sort ${direction === 'asc' ? 'Ascending' : 'Descending'}`;
-    }
-  }
 }
 
 export const setCurrentSort = (sort) => {
   _currentSort = { ...sort };
   
   // Update sort button text and icon
-  const sortBtn = document.getElementById('sortBtn');
   if (sortBtn) {
     // Clear existing content
     while (sortBtn.firstChild) {
@@ -221,7 +209,7 @@ export const setCurrentSort = (sort) => {
     
     // Add text showing field and direction
     const directionIcon = document.createElement('i');
-    directionIcon.className = _currentSort.direction === 'asc' ? 'fa fa-sort-up' : 'fa fa-sort-down';
+    directionIcon.className = _currentSort.direction === 'asc' ? 'fa fa-sort-down' : 'fa fa-sort-up';
     sortBtn.appendChild(directionIcon);
     
     // Add text showing field
@@ -234,22 +222,10 @@ export const setCurrentSort = (sort) => {
 
     // Update button title
     sortBtn.title = `Sort by ${_currentSort.field} (${_currentSort.direction === 'asc' ? 'ascending' : 'descending'})`;
-
-    // Update sort direction button
-    const sortDirectionBtn = document.getElementById('sortDirection');
-    if (sortDirectionBtn) {
-      sortDirectionBtn.dataset.direction = _currentSort.direction;
-      const icon = sortDirectionBtn.querySelector('i');
-      const text = sortDirectionBtn.querySelector('span');
-      if (icon && text) {
-        icon.className = _currentSort.direction === 'asc' ? 'fa fa-sort-up' : 'fa fa-sort-down';
-        text.textContent = `Sort ${_currentSort.direction === 'asc' ? 'Ascending' : 'Descending'}`;
-      }
-    }
   }
   
   // Update dropdown state
-  updateSortDropdownState(_currentSort.field, _currentSort.direction);
+  updateSortDropdownState(_currentSort.field);
   
   return _currentSort;
 };
@@ -267,23 +243,39 @@ document.querySelectorAll('.sort-option').forEach(option => {
   });
 });
 
-// Initialize sort direction button
-document.addEventListener('click', (event) => {
-  if (event.target.closest('#sortDirection')) {
+// Add click handler for sort button to toggle direction
+sortBtn.addEventListener('click', (event) => {
+  // Only toggle direction if we didn't click the dropdown icon
+  if (!event.target.classList.contains('fa-chevron-down')) {
     event.preventDefault();
     event.stopPropagation();
     
     const newDirection = _currentSort.direction === 'asc' ? 'desc' : 'asc';
-    _currentSort = { ..._currentSort, direction: newDirection };
-    
-    // Update the sort state
     setCurrentSort({ ..._currentSort, direction: newDirection });
     
     // Call sortFiles directly
     sortFiles();
     closeAllDropdowns();
   }
-}, true);
+});
+
+// Add click handler for sort button dropdown icon
+const sortBtnDropdownIcon = sortBtn.querySelector('.fa-chevron-down');
+if (sortBtnDropdownIcon) {
+  sortBtnDropdownIcon.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const dropdown = sortBtn.closest('.dropdown');
+    if (dropdown) {
+      if (dropdown.classList.contains('active')) {
+        dropdown.classList.remove('active');
+      } else {
+        closeAllDropdowns();
+        dropdown.classList.add('active');
+      }
+    }
+  });
+}
 
 // Function to update pagination display
 export function updatePagination(totalPages) {
