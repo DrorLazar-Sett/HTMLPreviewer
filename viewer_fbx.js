@@ -6,6 +6,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 class FBXViewer {
   constructor(container) {
     this.container = container;
+    this.isDarkMode = document.body.classList.contains('dark-mode');
     this.init();
   }
   async init() {
@@ -15,7 +16,7 @@ class FBXViewer {
     this.camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
     this.camera.position.set(0, 1.6, 3);
     this.renderer = new THREE.WebGLRenderer({antialias: true});
-    this.renderer.setClearColor(0x3a3a3a);
+    this.updateBackground();
     this.container.appendChild(this.renderer.domElement);
     this.renderer.setSize(width, height, true);
     this.renderer.domElement.style.width = '100%';
@@ -51,6 +52,17 @@ class FBXViewer {
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }
+
+  updateBackground() {
+    const color = this.isDarkMode ? 0x3a3a3a : 0xe8e8e8;
+    this.renderer.setClearColor(color);
+  }
+
+  setDarkMode(isDark) {
+    this.isDarkMode = isDark;
+    this.updateBackground();
+  }
+
   loadModel(url) {
     new FBXLoader().load(url, (object) => {
       const box = new THREE.Box3().setFromObject(object);

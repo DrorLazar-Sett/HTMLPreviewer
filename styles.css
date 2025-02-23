@@ -952,7 +952,7 @@ body:not(.dark-mode) .model-tile {
 body:not(.dark-mode) model-viewer,
 body:not(.dark-mode) .three-viewer,
 body:not(.dark-mode) .video-preview {
-  background-color: #cfcfcf;
+  background-color: #e8e8e8;
 }
 
 body:not(.dark-mode) .audio-tile {

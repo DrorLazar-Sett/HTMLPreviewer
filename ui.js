@@ -1,5 +1,5 @@
 // ui.js
-import { renderPage, sortFiles } from './asset_loading.js';
+import { renderPage, sortFiles, activeFbxViewers } from './asset_loading.js';
 
 const darkModeToggle = document.getElementById("darkModeToggle");
 const subfolderToggle = document.getElementById("subfolderToggle");
@@ -379,7 +379,11 @@ export function toggleSelectionUI(fileName) {
 
 // Theme toggle handler
 darkModeToggle.addEventListener("click", () => {
-  document.body.classList.toggle("dark-mode");
+  const isDarkMode = document.body.classList.toggle("dark-mode");
+  // Update all active FBX viewers
+  activeFbxViewers.forEach(viewer => {
+    viewer.setDarkMode(isDarkMode);
+  });
 });
 
 // Initialize UI states

@@ -1,5 +1,8 @@
 // asset_loading.js
 import FBXViewer from './viewer_fbx.js';
+
+// Keep track of active FBX viewers
+export const activeFbxViewers = new Set();
 import {
   getCurrentPage,
   getItemsPerPage,
@@ -254,6 +257,7 @@ async function loadTileContent(tile) {
       viewerDiv.className = "three-viewer";
       placeholder.replaceWith(viewerDiv);
       const viewer = new FBXViewer(viewerDiv);
+      activeFbxViewers.add(viewer);
       viewer.loadModel(URL.createObjectURL(model.file));
 
     } else if (model.type === "video") {
@@ -440,92 +444,17 @@ async function showFullscreen(model) {
     const container = document.createElement('div');
     container.style.width = '100%';
     container.style.height = '100%';
+    container.className = 'three-viewer';
     fullscreenViewer.appendChild(container);
     fullscreenViewer.style.display = 'block';
     
-    const scene = new THREE.Scene();
-    
-    // Wait for container to be in DOM
-    await new Promise(resolve => setTimeout(resolve, 0));
-    const containerRect = container.getBoundingClientRect();
-    
-    const camera = new THREE.PerspectiveCamera(75, containerRect.width/containerRect.height, 0.1, 1000);
-    camera.position.set(0, 1.6, 3);
-    
-    const renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setClearColor(0x3a3a3a);
-    container.appendChild(renderer.domElement);
-    
-    // Ensure renderer size matches container
-    renderer.setSize(containerRect.width, containerRect.height, true);
-    renderer.domElement.style.width = '100%';
-    renderer.domElement.style.height = '100%';
-    
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
-    
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(1, 1, 1).normalize();
-    scene.add(directionalLight);
-    
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.25;
-    controls.enableZoom = true;
-    
-    const mixer = new THREE.AnimationMixer(scene);
-    const clock = new THREE.Clock();
-    
-    new FBXLoader().load(URL.createObjectURL(model.file), (object) => {
-      const box = new THREE.Box3().setFromObject(object);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scaleFactor = 2 / maxDim;
-      object.scale.set(scaleFactor, scaleFactor, scaleFactor);
-      object.position.sub(center.multiplyScalar(scaleFactor));
-      scene.add(object);
-      
-      if (object.animations && object.animations.length > 0) {
-        mixer.clipAction(object.animations[0], object).play();
-      }
-      
-      controls.target.copy(object.position);
-      controls.update();
-    });
-    
-    function animate() {
-      requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      mixer.update(delta);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    
-    animate();
-    
-    function onWindowResize() {
-      const containerRect = container.getBoundingClientRect();
-      camera.aspect = containerRect.width / containerRect.height;
-      camera.updateProjectionMatrix();
-      renderer.setSize(containerRect.width, containerRect.height, true);
-      renderer.domElement.style.width = '100%';
-      renderer.domElement.style.height = '100%';
-    }
-    
-    window.addEventListener('resize', onWindowResize, false);
+    const viewer = new FBXViewer(container);
+    activeFbxViewers.add(viewer);
+    viewer.loadModel(URL.createObjectURL(model.file));
     
     currentFullscreenViewer = {
-      container,
-      scene,
-      camera,
-      renderer,
-      controls,
-      mixer,
-      animate,
       cleanup: () => {
-        window.removeEventListener('resize', onWindowResize);
-        renderer.dispose();
+        activeFbxViewers.delete(viewer);
       }
     };
     
