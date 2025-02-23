@@ -419,6 +419,7 @@ async function showFullscreen(model) {
   const fullscreenVideo = document.getElementById('fullscreenVideo');
 
   fullscreenOverlay.style.display = 'flex';
+  fullscreenOverlay.style.opacity = '1';
   fullscreenViewer.innerHTML = '';
   fullscreenVideo.style.display = 'none';
   

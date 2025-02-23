@@ -239,7 +239,8 @@ export function initializeUI() {
         // Global keyboard shortcuts
         document.addEventListener('keydown', function(event) {
           // Grid view shortcuts
-          if (fullscreenOverlay.style.display !== 'block') {
+          const isFullscreen = window.getComputedStyle(fullscreenOverlay).display === 'flex';
+          if (!isFullscreen) {
             if (event.ctrlKey && event.key === 'f') {
               event.preventDefault();
               searchInput.focus();
@@ -268,7 +269,7 @@ export function initializeUI() {
             }
           }
           // Fullscreen view shortcuts
-          else {
+          else if (isFullscreen) {
             if (event.key === 'Escape') {
               exitFullscreen(currentFullscreenViewer);
             } else if (event.key === 'ArrowLeft') {
@@ -488,6 +489,7 @@ export function updatePagination(totalPages) {
 export function exitFullscreen(currentFullscreenViewer) {
   const { fullscreenOverlay, fullscreenVideo } = window.uiElements;
   fullscreenOverlay.style.display = 'none';
+  fullscreenOverlay.style.opacity = '0';
   if (currentFullscreenViewer) {
     if (currentFullscreenViewer.type === 'video') {
       // Stop both fullscreen video and any preview video

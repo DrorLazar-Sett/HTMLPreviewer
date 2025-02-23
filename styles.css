@@ -132,6 +132,8 @@ body:not(.dark-mode) {
   background: #666;
   color: #fff;
   display: none;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -309,7 +311,7 @@ body:not(.dark-mode) .search-icon {
   z-index: 1000;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   transition: visibility 0s linear 0.1s, opacity 0.1s linear;
-  pointer-events: none;
+  pointer-events: all;
 }
 
 @media (max-width: 768px) {
