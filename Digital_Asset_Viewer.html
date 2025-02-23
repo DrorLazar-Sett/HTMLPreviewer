@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <title>3D Models, Video, Audio &amp; Image Grid Preview</title>
 
+  <script>
+    // Check if user has explicitly chosen light mode
+    if (localStorage.getItem('theme') === 'light') {
+      document.documentElement.classList.remove('dark-mode');
+    }
+  </script>
+
   <!-- Import map for Three.js modules -->
   <script type="importmap">
     {

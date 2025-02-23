@@ -97,13 +97,35 @@ export function initializeUI() {
         setCurrentSort(_currentSort);
       }
 
+      // Initialize dark mode toggle
       if (darkModeToggle) {
-        darkModeToggle.addEventListener("click", () => {
-          const isDarkMode = document.body.classList.toggle("dark-mode");
+        const moonIcon = darkModeToggle.querySelector('.fa-moon');
+        const updateTheme = (isDark) => {
+          if (isDark) {
+            document.documentElement.classList.add('dark-mode');
+            document.body.classList.add('dark-mode');
+            if (moonIcon) moonIcon.style.color = '#fff';
+          } else {
+            document.documentElement.classList.remove('dark-mode');
+            document.body.classList.remove('dark-mode');
+            if (moonIcon) moonIcon.style.color = '#666';
+          }
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
           activeFbxViewers.forEach(viewer => {
-            viewer.setDarkMode(isDarkMode);
+            viewer.setDarkMode(isDark);
           });
-        });
+        };
+
+        // Set initial moon icon color
+        if (moonIcon) {
+          moonIcon.style.color = document.body.classList.contains('dark-mode') ? '#fff' : '#666';
+        }
+
+        // Add click handler
+        darkModeToggle.onclick = () => {
+          const isDarkMode = document.body.classList.contains('dark-mode');
+          updateTheme(!isDarkMode);
+        };
       }
 
       if (sizeSlider && sizeValue) {

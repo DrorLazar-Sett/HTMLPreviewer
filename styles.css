@@ -11,6 +11,11 @@ body {
   margin: 0;
   transition: background-color 0.4s, color 0.4s;
 }
+
+body:not(.dark-mode) {
+  background-color: #ffffff;
+  color: #333;
+}
 /* Sticky top bar - Contains header, folder controls, and filter options */
 #topBar {
   position: sticky;
