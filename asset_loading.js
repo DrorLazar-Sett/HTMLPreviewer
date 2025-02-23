@@ -16,6 +16,7 @@ import {
   setCurrentSort,
   updatePagination,
   toggleSelectionUI,
+  fileMatchesSearch,
   prevPageBtn,
   nextPageBtn
 } from './ui.js';
@@ -24,7 +25,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
 const folderPickerButton = document.getElementById("folderPicker");
-const folderPathInput = document.getElementById("folderPath");
+// Remove folderPathInput reference since we no longer use it
 const viewerContainer = document.getElementById("viewerContainer");
 const filterOptions = document.querySelectorAll('.filter-option');
 const itemsOptions = document.querySelectorAll('.items-option');
@@ -131,10 +132,12 @@ function sortFiles() {
 // Initialize active filters
 const activeFilters = new Set(['fbx', 'glb', 'video', 'audio', 'image']);
 
-// Filter management - Updates displayed assets based on active file type filters
+// Filter management - Updates displayed assets based on active file type filters and search
 function updateFilteredModelFiles() {
   const previousLength = filteredModelFiles.length;
-  filteredModelFiles = modelFiles.filter(item => activeFilters.has(item.type));
+  filteredModelFiles = modelFiles.filter(item => 
+    activeFilters.has(item.type) && fileMatchesSearch(item)
+  );
 
   // Only trigger full re-render if filter actually changed the visible items
   if (previousLength !== filteredModelFiles.length) {
@@ -515,7 +518,6 @@ async function handleFolderSelection() {
       console.log("Could not get full path:", error);
     }
 
-    folderPathInput.value = fullPath;
     await handleFolderPick(dirHandle);
   } catch (error) {
     console.error("Error selecting folder:", error);
@@ -545,7 +547,6 @@ async function loadFolderFromPath(path) {
           currentHandle = await currentHandle.getDirectoryHandle(part);
         }
 
-        folderPathInput.value = path;
         await handleFolderPick(currentHandle);
         return;
       } catch (error) {
@@ -572,7 +573,6 @@ async function loadFolderFromPath(path) {
       console.log("Could not get full path:", error);
     }
 
-    folderPathInput.value = fullPath;
     await handleFolderPick(dirHandle);
   } catch (error) {
     console.error("Error loading folder from path:", error);
@@ -584,12 +584,6 @@ async function loadFolderFromPath(path) {
   }
 }
 
-folderPathInput.addEventListener("keypress", async (event) => {
-  if (event.key === "Enter") {
-    console.log("Enter key pressed in folder input");
-    await handleFolderSelection();
-  }
-});
 
 folderPickerButton.addEventListener("click", async () => {
   console.log("Folder picker button clicked");
@@ -758,7 +752,6 @@ export {
   tileObserver,
   observerOptions,
   folderPickerButton,
-  folderPathInput,
   viewerContainer,
   itemsOptions,
   itemsBtn,

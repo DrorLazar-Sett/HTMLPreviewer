@@ -23,8 +23,13 @@
   <!-- Top bar with header and all UI controls -->
   <div id="topBar">
     <h1>Digital Asset Viewer</h1>
+    <div class="searchControls">
+      <div class="search-wrapper">
+        <i class="fa fa-search search-icon"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by name, type, or path">
+      </div>
+    </div>
     <div class="fileControls">
-      <input type="text" id="folderPath" class="folder-input" placeholder="Enter folder path">
       <button id="folderPicker" class="btn" title="Pick a folder">
         <i class="fa fa-folder-open"></i>
       </button>

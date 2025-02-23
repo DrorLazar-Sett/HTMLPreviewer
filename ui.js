@@ -1,5 +1,5 @@
 // ui.js
-import { renderPage, sortFiles, activeFbxViewers } from './asset_loading.js';
+import { renderPage, sortFiles, activeFbxViewers, modelFiles, updateFilteredModelFiles } from './asset_loading.js';
 
 const darkModeToggle = document.getElementById("darkModeToggle");
 const subfolderToggle = document.getElementById("subfolderToggle");
@@ -23,6 +23,32 @@ let _loadSubfolders = false;
 let _subfolderDepth = 'off';
 let _currentSort = { field: 'name', direction: 'asc' };
 let _selectedFiles = new Set();
+let _searchTerm = '';
+
+// Search input handler
+const searchInput = document.getElementById('searchInput');
+searchInput.addEventListener('input', (e) => {
+  _searchTerm = e.target.value.toLowerCase();
+  setCurrentPage(0);
+  updateFilteredModelFiles();
+  renderPage(getCurrentPage());
+});
+
+// Function to check if a file matches the search criteria
+export const fileMatchesSearch = (file) => {
+  if (!_searchTerm) return true;
+  
+  const searchTerms = _searchTerm.split(' ').filter(term => term.length > 0);
+  if (searchTerms.length === 0) return true;
+  
+  const searchableContent = [
+    file.name.toLowerCase(),
+    file.type.toLowerCase(),
+    file.fullPath?.toLowerCase() || ''
+  ].join(' ');
+  
+  return searchTerms.every(term => searchableContent.includes(term));
+};
 
 // Getters
 export const getCurrentPage = () => _currentPage;
@@ -31,6 +57,7 @@ export const getLoadSubfolders = () => _loadSubfolders;
 export const getSubfolderDepth = () => _subfolderDepth;
 export const getCurrentSort = () => ({ ..._currentSort });
 export const getSelectedFiles = () => new Set(_selectedFiles);
+export const getSearchTerm = () => _searchTerm;
 
 // Setters
 export const setCurrentPage = (page) => {
@@ -376,6 +403,21 @@ export function toggleSelectionUI(fileName) {
   }
   updateSelectionCount();
 }
+
+// Add event listeners for selection options
+document.querySelectorAll('.selection-option').forEach(option => {
+  option.addEventListener('click', () => {
+    const action = option.dataset.action;
+    if (action === 'download') {
+      downloadSelected(modelFiles);
+    } else if (action === 'save') {
+      saveSelection(modelFiles);
+    } else if (action === 'clear') {
+      clearSelection();
+    }
+    closeAllDropdowns();
+  });
+});
 
 // Theme toggle handler
 darkModeToggle.addEventListener("click", () => {
