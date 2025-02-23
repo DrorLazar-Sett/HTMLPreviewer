@@ -17,8 +17,8 @@ import {
   updatePagination,
   toggleSelectionUI,
   fileMatchesSearch,
-  prevPageBtn,
-  nextPageBtn
+  getUIElements,
+  initializeUI
 } from './ui.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -623,22 +623,29 @@ sortOptions.forEach(option => {
 
 // Sort direction is now handled in ui.js
 
-prevPageBtn.addEventListener("click", () => {
-  const currentPage = getCurrentPage();
-  if (currentPage > 0) {
-    setCurrentPage(currentPage - 1);
-    renderPage(getCurrentPage());
-    updatePagination(Math.ceil(filteredModelFiles.length / getItemsPerPage()));
-  }
-});
+// Initialize UI and add pagination event listeners
+initializeUI().then(() => {
+  const { prevPageBtn, nextPageBtn } = getUIElements();
 
-nextPageBtn.addEventListener("click", () => {
-  const currentPage = getCurrentPage();
-  const maxPage = Math.ceil(filteredModelFiles.length / getItemsPerPage()) - 1;
-  if (currentPage < maxPage) {
-    setCurrentPage(currentPage + 1);
-    renderPage(getCurrentPage());
-    updatePagination(Math.ceil(filteredModelFiles.length / getItemsPerPage()));
+  if (prevPageBtn && nextPageBtn) {
+    prevPageBtn.addEventListener("click", () => {
+      const currentPage = getCurrentPage();
+      if (currentPage > 0) {
+        setCurrentPage(currentPage - 1);
+        renderPage(getCurrentPage());
+        updatePagination(Math.ceil(filteredModelFiles.length / getItemsPerPage()));
+      }
+    });
+
+    nextPageBtn.addEventListener("click", () => {
+      const currentPage = getCurrentPage();
+      const maxPage = Math.ceil(filteredModelFiles.length / getItemsPerPage()) - 1;
+      if (currentPage < maxPage) {
+        setCurrentPage(currentPage + 1);
+        renderPage(getCurrentPage());
+        updatePagination(Math.ceil(filteredModelFiles.length / getItemsPerPage()));
+      }
+    });
   }
 });
 

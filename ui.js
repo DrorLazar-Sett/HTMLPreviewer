@@ -1,20 +1,6 @@
 // ui.js
 import { renderPage, sortFiles, activeFbxViewers, modelFiles, updateFilteredModelFiles } from './asset_loading.js';
-
-const darkModeToggle = document.getElementById("darkModeToggle");
-const subfolderToggle = document.getElementById("subfolderToggle");
-const prevPageBtn = document.getElementById("prevPage");
-const nextPageBtn = document.getElementById("nextPage");
-const sizeSlider = document.getElementById("sizeSlider");
-const sizeValue = document.getElementById("sizeValue");
-const pageInfo = document.getElementById("pageInfo");
-const fullscreenOverlay = document.getElementById('fullscreenOverlay');
-const returnButton = document.getElementById('returnButton');
-const fullscreenVideo = document.getElementById('fullscreenVideo');
-const fullscreenViewer = document.getElementById('fullscreenViewer');
-const selectionDropdown = document.getElementById('selectionDropdown');
-const itemsPerPageBtn = document.getElementById('itemsPerPageBtn');
-const sortBtn = document.getElementById('sortBtn');
+import { currentFullscreenViewer } from './asset_loading.js';
 
 // Private state
 let _currentPage = 0;
@@ -25,14 +11,231 @@ let _currentSort = { field: 'name', direction: 'asc' };
 let _selectedFiles = new Set();
 let _searchTerm = '';
 
-// Search input handler
-const searchInput = document.getElementById('searchInput');
-searchInput.addEventListener('input', (e) => {
-  _searchTerm = e.target.value.toLowerCase();
+function clearSearch(searchInput) {
+  searchInput.value = '';
+  _searchTerm = '';
   setCurrentPage(0);
   updateFilteredModelFiles();
   renderPage(getCurrentPage());
-});
+}
+
+// Function to close all dropdowns
+function closeAllDropdowns() {
+  document.querySelectorAll('.dropdown').forEach(dropdown => {
+    dropdown.classList.remove('active');
+  });
+}
+
+// Initialize UI elements and return a promise
+export function initializeUI() {
+  return new Promise((resolve) => {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeElements);
+    } else {
+      initializeElements();
+    }
+
+    function initializeElements() {
+      // Get all UI elements
+      const darkModeToggle = document.getElementById("darkModeToggle");
+      const subfolderToggle = document.getElementById("subfolderToggle");
+      const prevPageBtn = document.getElementById("prevPage");
+      const nextPageBtn = document.getElementById("nextPage");
+      const sizeSlider = document.getElementById("sizeSlider");
+      const sizeValue = document.getElementById("sizeValue");
+      const pageInfo = document.getElementById("pageInfo");
+      const fullscreenOverlay = document.getElementById('fullscreenOverlay');
+      const returnButton = document.getElementById('returnButton');
+      const fullscreenVideo = document.getElementById('fullscreenVideo');
+      const fullscreenViewer = document.getElementById('fullscreenViewer');
+      const selectionDropdown = document.getElementById('selectionDropdown');
+      const itemsPerPageBtn = document.getElementById('itemsPerPageBtn');
+      const sortBtn = document.getElementById('sortBtn');
+      const searchInput = document.getElementById('searchInput');
+      const searchClear = document.querySelector('.search-clear');
+
+      // Store UI elements globally
+      window.uiElements = {
+        darkModeToggle,
+        subfolderToggle,
+        prevPageBtn,
+        nextPageBtn,
+        sizeSlider,
+        sizeValue,
+        pageInfo,
+        fullscreenOverlay,
+        returnButton,
+        fullscreenVideo,
+        fullscreenViewer,
+        selectionDropdown,
+        itemsPerPageBtn,
+        sortBtn,
+        searchInput,
+        searchClear
+      };
+
+      // Initialize event listeners
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          _searchTerm = e.target.value.toLowerCase();
+          setCurrentPage(0);
+          updateFilteredModelFiles();
+          renderPage(getCurrentPage());
+        });
+      }
+
+      if (searchClear) {
+        searchClear.addEventListener('click', () => clearSearch(searchInput));
+      }
+
+      if (sizeSlider && sizeValue) {
+        document.documentElement.style.setProperty('--tile-size', `${sizeSlider.value}px`);
+        sizeValue.textContent = `${sizeSlider.value}px`;
+      }
+
+      if (sortBtn) {
+        setCurrentSort(_currentSort);
+      }
+
+      if (darkModeToggle) {
+        darkModeToggle.addEventListener("click", () => {
+          const isDarkMode = document.body.classList.toggle("dark-mode");
+          activeFbxViewers.forEach(viewer => {
+            viewer.setDarkMode(isDarkMode);
+          });
+        });
+      }
+
+      if (sizeSlider && sizeValue) {
+        sizeSlider.addEventListener("input", (e) => {
+          const size = e.target.value;
+          document.documentElement.style.setProperty('--tile-size', `${size}px`);
+          sizeValue.textContent = `${size}px`;
+        });
+      }
+
+      // Dropdown button handlers
+      document.querySelectorAll('.dropdown-btn:not(#sortBtn)').forEach(button => {
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      });
+
+      document.querySelectorAll('.dropdown').forEach(dropdown => {
+        let closeTimeout;
+        
+        dropdown.addEventListener('mouseenter', () => {
+          if (closeTimeout) {
+            clearTimeout(closeTimeout);
+          }
+          closeAllDropdowns();
+          dropdown.classList.add('active');
+        });
+        
+        dropdown.addEventListener('mouseleave', () => {
+          closeTimeout = setTimeout(() => {
+            dropdown.classList.remove('active');
+          }, 150);
+        });
+      });
+
+      document.querySelectorAll('.dropdown-content').forEach(content => {
+        content.addEventListener('mouseenter', () => {
+          const dropdown = content.closest('.dropdown');
+          if (dropdown) {
+            dropdown.classList.add('active');
+          }
+        });
+      });
+
+      document.querySelectorAll('.subfolder-option').forEach(option => {
+        option.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const depth = option.dataset.depth;
+          setLoadSubfolders(depth !== 'off', depth);
+          closeAllDropdowns();
+          renderPage(getCurrentPage());
+        });
+      });
+
+      document.querySelectorAll('.items-option').forEach(option => {
+        option.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const value = parseInt(option.dataset.value);
+          setItemsPerPage(value);
+          setCurrentPage(0);
+          closeAllDropdowns();
+          renderPage(getCurrentPage());
+        });
+      });
+
+      document.querySelectorAll('.sort-option').forEach(option => {
+        option.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const field = option.dataset.value;
+          setCurrentSort({ field, direction: _currentSort.direction });
+          sortFiles();
+          closeAllDropdowns();
+        });
+      });
+
+      // Initialize sort button state and handlers
+      if (sortBtn) {
+        // Set initial sort state
+        setCurrentSort(_currentSort);
+
+        // Handle sort direction toggle
+        sortBtn.addEventListener('click', handleSortButtonClick);
+
+        // Handle dropdown toggle
+        const sortBtnDropdownIcon = sortBtn.querySelector('.fa-chevron-down');
+        if (sortBtnDropdownIcon) {
+          sortBtnDropdownIcon.addEventListener('click', handleSortDropdownToggle);
+        }
+      }
+
+      document.querySelectorAll('.selection-option').forEach(option => {
+        option.addEventListener('click', () => {
+          const action = option.dataset.action;
+          if (action === 'download') {
+            downloadSelected(modelFiles);
+          } else if (action === 'save') {
+            saveSelection(modelFiles);
+          } else if (action === 'clear') {
+            clearSelection();
+          }
+          closeAllDropdowns();
+        });
+      });
+
+      if (returnButton && fullscreenOverlay) {
+        returnButton.addEventListener('click', () => {
+          exitFullscreen(currentFullscreenViewer);
+        });
+
+        document.addEventListener('keydown', function(event) {
+          if (fullscreenOverlay.style.display === 'block' && event.key === 'Escape') {
+            exitFullscreen(currentFullscreenViewer);
+          }
+        });
+
+        fullscreenOverlay.addEventListener('click', function(event) {
+          if (event.target === fullscreenOverlay) {
+            exitFullscreen(currentFullscreenViewer);
+          }
+        });
+      }
+
+      resolve(window.uiElements);
+    }
+  });
+}
+
+// Export function to get UI elements
+export function getUIElements() {
+  return window.uiElements || {};
+}
 
 // Function to check if a file matches the search criteria
 export const fileMatchesSearch = (file) => {
@@ -79,6 +282,7 @@ function updateItemsDropdownState(items) {
 }
 
 export const setItemsPerPage = (items) => {
+  const { itemsPerPageBtn } = window.uiElements;
   _itemsPerPage = items;
   
   // Clear existing content
@@ -114,6 +318,7 @@ function updateSubfoldersDropdownState(depth) {
 }
 
 export const setLoadSubfolders = (value, depth = 'off') => {
+  const { subfolderToggle } = window.uiElements;
   _loadSubfolders = value;
   _subfolderDepth = depth;
   
@@ -143,73 +348,6 @@ export const setLoadSubfolders = (value, depth = 'off') => {
   return _loadSubfolders;
 };
 
-// Function to close all dropdowns
-function closeAllDropdowns() {
-  document.querySelectorAll('.dropdown').forEach(dropdown => {
-    dropdown.classList.remove('active');
-  });
-}
-
-// Prevent click events on dropdown buttons (except sort button)
-document.querySelectorAll('.dropdown-btn:not(#sortBtn)').forEach(button => {
-  button.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-  });
-});
-
-// Add hover handlers for dropdowns
-document.querySelectorAll('.dropdown').forEach(dropdown => {
-  let closeTimeout;
-  
-  dropdown.addEventListener('mouseenter', () => {
-    if (closeTimeout) {
-      clearTimeout(closeTimeout);
-    }
-    closeAllDropdowns();
-    dropdown.classList.add('active');
-  });
-  
-  dropdown.addEventListener('mouseleave', () => {
-    closeTimeout = setTimeout(() => {
-      dropdown.classList.remove('active');
-    }, 150); // Small delay to improve usability when moving to submenu
-  });
-});
-
-// Keep dropdown open when hovering over content
-document.querySelectorAll('.dropdown-content').forEach(content => {
-  content.addEventListener('mouseenter', () => {
-    const dropdown = content.closest('.dropdown');
-    if (dropdown) {
-      dropdown.classList.add('active');
-    }
-  });
-});
-
-// Add event listeners for subfolder options
-document.querySelectorAll('.subfolder-option').forEach(option => {
-  option.addEventListener('click', (event) => {
-    event.stopPropagation();
-    const depth = option.dataset.depth;
-    setLoadSubfolders(depth !== 'off', depth);
-    closeAllDropdowns();
-    renderPage(getCurrentPage());
-  });
-});
-
-// Add event listeners for items per page options
-document.querySelectorAll('.items-option').forEach(option => {
-  option.addEventListener('click', (event) => {
-    event.stopPropagation();
-    const value = parseInt(option.dataset.value);
-    setItemsPerPage(value);
-    setCurrentPage(0);
-    closeAllDropdowns();
-    renderPage(getCurrentPage());
-  });
-});
-
 function updateSortDropdownState(field) {
   const sortDropdown = document.getElementById('sortDropdown');
   if (!sortDropdown) return;
@@ -225,6 +363,7 @@ function updateSortDropdownState(field) {
 }
 
 export const setCurrentSort = (sort) => {
+  const { sortBtn } = window.uiElements;
   _currentSort = { ...sort };
   
   // Update sort button text and icon
@@ -258,55 +397,9 @@ export const setCurrentSort = (sort) => {
   return _currentSort;
 };
 
-// Add event listeners for sort options
-document.querySelectorAll('.sort-option').forEach(option => {
-  option.addEventListener('click', (event) => {
-    event.stopPropagation();
-    const field = option.dataset.value;
-    setCurrentSort({ field, direction: _currentSort.direction });
-    
-    // Call sortFiles directly
-    sortFiles();
-    closeAllDropdowns();
-  });
-});
-
-// Add click handler for sort button to toggle direction
-sortBtn.addEventListener('click', (event) => {
-  // Only toggle direction if we didn't click the dropdown icon
-  if (!event.target.classList.contains('fa-chevron-down')) {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    const newDirection = _currentSort.direction === 'asc' ? 'desc' : 'asc';
-    setCurrentSort({ ..._currentSort, direction: newDirection });
-    
-    // Call sortFiles directly
-    sortFiles();
-    closeAllDropdowns();
-  }
-});
-
-// Add click handler for sort button dropdown icon
-const sortBtnDropdownIcon = sortBtn.querySelector('.fa-chevron-down');
-if (sortBtnDropdownIcon) {
-  sortBtnDropdownIcon.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const dropdown = sortBtn.closest('.dropdown');
-    if (dropdown) {
-      if (dropdown.classList.contains('active')) {
-        dropdown.classList.remove('active');
-      } else {
-        closeAllDropdowns();
-        dropdown.classList.add('active');
-      }
-    }
-  });
-}
-
 // Function to update pagination display
 export function updatePagination(totalPages) {
+  const { pageInfo, prevPageBtn, nextPageBtn } = window.uiElements;
   totalPages = Math.max(1, totalPages || 1);
   pageInfo.textContent = `Page ${_currentPage + 1} of ${totalPages}`;
   prevPageBtn.disabled = _currentPage === 0;
@@ -315,6 +408,7 @@ export function updatePagination(totalPages) {
 
 // Function to exit fullscreen
 export function exitFullscreen(currentFullscreenViewer) {
+  const { fullscreenOverlay, fullscreenVideo } = window.uiElements;
   fullscreenOverlay.style.display = 'none';
   if (currentFullscreenViewer) {
     if (currentFullscreenViewer === fullscreenVideo || currentFullscreenViewer.type === 'video') {
@@ -336,6 +430,7 @@ export function exitFullscreen(currentFullscreenViewer) {
 
 // Function to update selection count in UI
 export function updateSelectionCount() {
+  const { selectionDropdown } = window.uiElements;
   const count = _selectedFiles.size;
   selectionDropdown.innerHTML = `${count} Selected <i class="fa fa-chevron-down"></i>`;
 }
@@ -404,64 +499,29 @@ export function toggleSelectionUI(fileName) {
   updateSelectionCount();
 }
 
-// Add event listeners for selection options
-document.querySelectorAll('.selection-option').forEach(option => {
-  option.addEventListener('click', () => {
-    const action = option.dataset.action;
-    if (action === 'download') {
-      downloadSelected(modelFiles);
-    } else if (action === 'save') {
-      saveSelection(modelFiles);
-    } else if (action === 'clear') {
-      clearSelection();
-    }
+// Sort button click handler
+function handleSortButtonClick(event) {
+  if (!event.target.classList.contains('fa-chevron-down')) {
+    event.preventDefault();
+    event.stopPropagation();
+    const newDirection = _currentSort.direction === 'asc' ? 'desc' : 'asc';
+    setCurrentSort({ ..._currentSort, direction: newDirection });
+    sortFiles();
     closeAllDropdowns();
-  });
-});
-
-// Theme toggle handler
-darkModeToggle.addEventListener("click", () => {
-  const isDarkMode = document.body.classList.toggle("dark-mode");
-  // Update all active FBX viewers
-  activeFbxViewers.forEach(viewer => {
-    viewer.setDarkMode(isDarkMode);
-  });
-});
-
-// Initialize UI states
-document.documentElement.style.setProperty('--tile-size', `${sizeSlider.value}px`);
-sizeValue.textContent = `${sizeSlider.value}px`;
-setCurrentSort(_currentSort); // Initialize sort button state
-
-// Size slider handler
-sizeSlider.addEventListener("input", (e) => {
-  const size = e.target.value;
-  document.documentElement.style.setProperty('--tile-size', `${size}px`);
-  sizeValue.textContent = `${size}px`;
-});
-
-// Import currentFullscreenViewer from asset_loading.js
-import { currentFullscreenViewer } from './asset_loading.js';
-
-// Event listeners
-returnButton.addEventListener('click', () => {
-  exitFullscreen(currentFullscreenViewer);
-});
-
-document.addEventListener('keydown', function(event) {
-  if (fullscreenOverlay.style.display === 'block' && event.key === 'Escape') {
-    exitFullscreen(currentFullscreenViewer);
   }
-});
+}
 
-fullscreenOverlay.addEventListener('click', function(event) {
-  if (event.target === fullscreenOverlay) {
-    exitFullscreen(currentFullscreenViewer);
+// Sort dropdown toggle handler
+function handleSortDropdownToggle(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const dropdown = event.target.closest('.dropdown');
+  if (dropdown) {
+    if (dropdown.classList.contains('active')) {
+      dropdown.classList.remove('active');
+    } else {
+      closeAllDropdowns();
+      dropdown.classList.add('active');
+    }
   }
-});
-
-export {
-  prevPageBtn,
-  nextPageBtn,
-  subfolderToggle
-};
+}

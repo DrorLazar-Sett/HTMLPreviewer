@@ -2,52 +2,13 @@
 import * as AssetLoading from './asset_loading.js';
 import * as UI from './ui.js';
 import FBXViewer from './viewer_fbx.js';
-// THREE is already imported and exposed globally in Digital_Asset_Viewer.html
 
-// Initialize event listeners and application start
+// Initialize UI and set up event listeners
+UI.initializeUI().then(() => {
+  // Initial render
+  AssetLoading.renderPage(UI.getCurrentPage());
+  UI.updatePagination(Math.ceil(AssetLoading.filteredModelFiles.length / UI.getItemsPerPage()));
+  UI.updateSelectionCount();
 
-// Folder picker button event listener (moved here to connect UI with asset loading)
-AssetLoading.folderPickerButton.addEventListener("click", async () => {
-  console.log("Folder picker button clicked (main.js)");
-  try {
-    await AssetLoading.handleFolderSelection();
-  } catch (error) {
-    console.error("Error in folderPicker click:", error);
-    alert(`Error: ${error.message}`);
-  }
+  console.log("Main script initialized.");
 });
-
-// Folder path input Enter key listener (moved here to connect UI with asset loading)
-AssetLoading.folderPathInput.addEventListener("keypress", async (event) => {
-  if (event.key === "Enter") {
-    console.log("Enter key pressed in folder input (main.js)");
-    await AssetLoading.handleFolderSelection();
-  }
-});
-
-// Selection dropdown actions
-const selectionOptions = document.querySelectorAll('.selection-option');
-selectionOptions.forEach(option => {
-  const action = option.dataset.action;
-  option.addEventListener('click', () => {
-    switch(action) {
-      case 'download':
-        UI.downloadSelected(AssetLoading.modelFiles);
-        break;
-      case 'save':
-        UI.saveSelection(AssetLoading.modelFiles);
-        break;
-      case 'clear':
-        UI.clearSelection();
-        break;
-    }
-  });
-});
-
-
-// Initial render (you might want to load a default folder or show a welcome message initially)
-AssetLoading.renderPage(UI.currentPage);
-UI.updatePagination(Math.ceil(AssetLoading.filteredModelFiles.length / UI.itemsPerPage));
-UI.updateSelectionCount(); // Initialize selection count to 0
-
-console.log("Main script initialized.");
