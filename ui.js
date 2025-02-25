@@ -611,16 +611,9 @@ function navigateFullscreen(direction) {
   const currentIndex = filteredModelFiles.findIndex(file => file.name === currentFullscreenViewer?.fileName);
   if (currentIndex === -1) return;
 
-  const currentType = currentFullscreenViewer?.type || filteredModelFiles[currentIndex].type;
-  let newIndex = currentIndex;
-
-  do {
-    newIndex = direction === 'prev' ? newIndex - 1 : newIndex + 1;
-  } while (
-    newIndex >= 0 && 
-    newIndex < filteredModelFiles.length && 
-    filteredModelFiles[newIndex].type !== currentType
-  );
+  // Simply move to the next/previous item in the filtered files array
+  // This respects the current sort order shown in the grid
+  const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
 
   if (newIndex >= 0 && newIndex < filteredModelFiles.length) {
     const nextFile = filteredModelFiles[newIndex];
