@@ -488,8 +488,21 @@ export function updatePagination(totalPages) {
 // Function to exit fullscreen
 export function exitFullscreen(currentFullscreenViewer) {
   const { fullscreenOverlay, fullscreenVideo } = window.uiElements;
+  const fullscreenInfo = document.getElementById('fullscreenInfo');
+  
+  // Hide the fullscreen overlay and info panel
   fullscreenOverlay.style.display = 'none';
   fullscreenOverlay.style.opacity = '0';
+  
+  // Clear file information
+  const fullscreenFilename = document.querySelector('.fullscreen-filename');
+  const fullscreenDetails = document.querySelector('.fullscreen-details');
+  const fullscreenPath = document.querySelector('.fullscreen-path');
+  
+  if (fullscreenFilename) fullscreenFilename.textContent = '';
+  if (fullscreenDetails) fullscreenDetails.textContent = '';
+  if (fullscreenPath) fullscreenPath.textContent = '';
+  
   if (currentFullscreenViewer) {
     if (currentFullscreenViewer.type === 'video') {
       // Stop both fullscreen video and any preview video

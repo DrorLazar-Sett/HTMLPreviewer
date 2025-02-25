@@ -423,6 +423,15 @@ async function showFullscreen(model) {
   const fullscreenOverlay = document.getElementById('fullscreenOverlay');
   const fullscreenViewer = document.getElementById('fullscreenViewer');
   const fullscreenVideo = document.getElementById('fullscreenVideo');
+  const fullscreenInfo = document.getElementById('fullscreenInfo');
+  const fullscreenFilename = document.querySelector('.fullscreen-filename');
+  const fullscreenDetails = document.querySelector('.fullscreen-details');
+  const fullscreenPath = document.querySelector('.fullscreen-path');
+
+  // Update file information
+  fullscreenFilename.textContent = model.name;
+  fullscreenDetails.textContent = `${formatFileSize(model.file.size)} • ${model.type.toUpperCase()} • ${formatDate(model.file.lastModified)}`;
+  fullscreenPath.textContent = model.fullPath || '';
 
   fullscreenOverlay.style.display = 'flex';
   fullscreenOverlay.style.opacity = '1';

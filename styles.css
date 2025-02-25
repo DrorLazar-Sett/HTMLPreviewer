@@ -892,6 +892,57 @@ body.dark-mode .audio-controls audio::-webkit-media-controls-panel {
   z-index: 10;
 }
 
+/* Fullscreen info panel */
+.fullscreen-info {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  max-width: 300px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 12px 15px;
+  z-index: 1002;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: opacity 0.3s ease;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.fullscreen-filename {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.fullscreen-details {
+  font-size: 0.85rem;
+  color: #ccc;
+}
+
+.fullscreen-path {
+  font-size: 0.75rem;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+body:not(.dark-mode) .fullscreen-info {
+  background: rgba(255, 255, 255, 0.85);
+  color: #333;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+body:not(.dark-mode) .fullscreen-details {
+  color: #555;
+}
+
+body:not(.dark-mode) .fullscreen-path {
+  color: #777;
+}
+
 #fullscreenOverlay {
   position: fixed;
   top: 0;
